@@ -1,12 +1,19 @@
 const crypto = require('crypto');
 
+type Data = {
+  [key: string]: any
+}
+
 type Block = {
   previousHash: string;
   hash: string;
   timestamp: number;
-  data: { [key: string]: any };
+  data: Data;
   nonce: number
 }
+
+type Chain = Block[];
+
 
 const GENESIS_BLOCK: Block = {
   previousHash: '0',
@@ -25,20 +32,6 @@ function calculateHash({
   const hash = crypto.createHash('sha256');
   hash.update(previousHash + timestamp + JSON.stringify(data) + nonce);
   return hash.digest('hex');
-}
-
-function generateGenesisBlock(): Block {
-  const block = {
-    timestamp: 0,
-    data: {},
-    previousHash: "",
-    nonce: 1,
-    hash: ""
-  };
-  return {
-    ...block,
-    hash: calculateHash(block)
-  }
 }
 
 function updateHash(block: Block) {
@@ -72,4 +65,36 @@ const newBlock = mineBlock(4, {
   nonce: 1
 });
 
-console.log(newBlock);
+function addBlock(chain: Chain, data: Data) {
+  const { hash: previousHash } = chain[chain.length - 1];
+  const block: Block = {
+    timestamp: + new Date(),
+    data,
+    previousHash,
+    hash: '',
+    nonce: 0
+  }
+  const newBlock = mineBlock(4, block);
+  return [...chain, newBlock];
+}
+
+function validateChain(chain: Chain) {
+  return chain.map((block, i) => {
+    if (i === 0) {
+      return true;
+    }
+    return (block.hash === calculateHash(block) && block.previousHash === chain[i -1].hash);
+  }).filter(isValid => !isValid).length === 0;
+}
+
+const chain = [GENESIS_BLOCK];
+
+const newBlockData = {
+  sender: 'Marci',
+  receiver: 'John Doe',
+  amount: 4
+};
+
+const newChain = addBlock(chain, newBlockData);
+console.log(newChain);
+console.log(validateChain(newChain));
