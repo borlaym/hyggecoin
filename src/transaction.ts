@@ -4,10 +4,10 @@ const ec = require('elliptic').ec;
 /**
  * Amount of coins rewarded for the miner of the block
  */
-const REWARD_AMOUNT = 50;
+export const REWARD_AMOUNT = 50;
 
 
-type TransactionOutput = {
+export type TransactionOutput = {
   /**
    * This is the public key of the user the number of coins are sent to
    */
@@ -21,7 +21,7 @@ type TransactionOutput = {
 /**
  * This is a utility type to hold information needed when handling unspent transaction outputs. Otherwise the entire transaction would need to be passed around.
  */
-type UnspentTransactionOutput = {
+export type UnspentTransactionOutput = {
   /**
    * Id of the transaction this output belongs to
    */
@@ -40,7 +40,7 @@ type UnspentTransactionOutput = {
   amount: number;
 }
 
-type TransactionInput = {
+export type TransactionInput = {
   /**
    * The id of the transaction that holds the unspent output this input is referencing.
    */
@@ -56,7 +56,7 @@ type TransactionInput = {
   signature: string;
 }
 
-type Transaction = {
+export type Transaction = {
   /**
    * Derived from all other fields of the transaction, excluding signatures. When the data changes, the id should change.
    */
@@ -79,16 +79,16 @@ type Transaction = {
 /**
  * Generate a has from the transaction's inputs and outputs to use as the id of the transaction
  */
-function generateTransactionID(transaction: Transaction): string {
+export function generateTransactionID(transaction: Transaction): string {
   const content = transaction.inputs.map(input => input.transactionId + input.transactionOutputIndex).join('') +
-    transaction.outputs.map(output => output.address + output.amount + transaction.blockHeight);
+    transaction.outputs.map(output => output.address + output.amount + transaction.blockHeight).join('');
   return getHash(content);
 }
 
 /**
  * Using your private key, sign a transaction's inputs
  */
-function signTransactionInputs(transaction: Transaction, privateKey: string, myUnspentTransactionOutputs: UnspentTransactionOutput[]): Transaction {
+export function signTransactionInputs(transaction: Transaction, privateKey: string, myUnspentTransactionOutputs: UnspentTransactionOutput[]): Transaction {
   const key = ec.keyFromPrivate(privateKey, 'hex');
   return ({
     ...transaction,
@@ -104,7 +104,7 @@ function signTransactionInputs(transaction: Transaction, privateKey: string, myU
 /**
  * Determines whether a transaction is valid or not, checking id and that the inputs are valid, and that inputs equal outputs
  */
-function validateTransaction(transaction: Transaction, myUnspentTransactionOutputs: UnspentTransactionOutput[]): boolean {
+export function validateTransaction(transaction: Transaction, myUnspentTransactionOutputs: UnspentTransactionOutput[]): boolean {
   // Validate id
   if (generateTransactionID(transaction) !== transaction.id) {
     console.error('Transaction ID incorrect.')
@@ -149,9 +149,10 @@ function validateTransaction(transaction: Transaction, myUnspentTransactionOutpu
  * Q: Why does this have to have any inputs anyway? Maybe because the need to sign it? Would someone be able to steal an output otherwise?
  * Right now I'm just going to ignore the input and only have an output, before I understand this.
  */
-function validateCoinbaseTransaction(transaction: Transaction) {
+export function validateCoinbaseTransaction(transaction: Transaction) {
   // Validate id
-  if (generateTransactionID(transaction) !== transaction.id) {
+  const generatedId = generateTransactionID(transaction);
+  if (generatedId !== transaction.id) {
     console.error('Transaction ID incorrect.')
     return false;
   }
