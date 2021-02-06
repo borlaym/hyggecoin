@@ -142,3 +142,30 @@ function validateTransaction(transaction: Transaction, myUnspentTransactionOutpu
   }
   return true;
 }
+
+/**
+ * Coinbase transactions are always the first transactions in a block, and they reward the miner of the block with REWARD_AMOUNT
+ * Checking its validity is different. The input's index is the block's index.
+ * Q: Why does this have to have any inputs anyway? Maybe because the need to sign it? Would someone be able to steal an output otherwise?
+ * Right now I'm just going to ignore the input and only have an output, before I understand this.
+ */
+function validateCoinbaseTransaction(transaction: Transaction) {
+  // Validate id
+  if (generateTransactionID(transaction) !== transaction.id) {
+    console.error('Transaction ID incorrect.')
+    return false;
+  }
+
+  // TODO / Q: check input?
+
+  if (transaction.outputs.length !== 1) {
+    console.error('Coinbase transaction can only have one output.');
+    return false;
+  }
+
+  if (transaction.outputs[0].amount !== REWARD_AMOUNT) {
+    console.error('Coinbase transaction value must be for ' + REWARD_AMOUNT);
+    return false;
+  }
+  return true;
+}
