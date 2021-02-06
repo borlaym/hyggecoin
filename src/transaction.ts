@@ -1,29 +1,79 @@
 import { getHash, toHexString } from "./util";
 const ec = require('elliptic').ec;
 
+/**
+ * Amount of coins rewarded for the miner of the block
+ */
+const REWARD_AMOUNT = 50;
+
+
 type TransactionOutput = {
+  /**
+   * This is the public key of the user the number of coins are sent to
+   */
   address: string;
+  /**
+   * Number of coins to send
+   */
   amount: number;
 }
 
+/**
+ * This is a utility type to hold information needed when handling unspent transaction outputs. Otherwise the entire transaction would need to be passed around.
+ */
 type UnspentTransactionOutput = {
+  /**
+   * Id of the transaction this output belongs to
+   */
   transactionId: string;
+  /**
+   * Index of the output inside the transaction outputs. Needed because one transaction can have multiple outputs, and we need to find the corresponding output when we verify
+   */
   index: number;
+  /**
+   * Public key of recipient. Copied from the output directly.
+   */
   address: string;
+  /**
+   * Amount of coins sent. Copied from the output directly.
+   */
   amount: number;
 }
 
 type TransactionInput = {
+  /**
+   * The id of the transaction that holds the unspent output this input is referencing.
+   */
   transactionId: string;
+  /**
+   * Since one transaction can have a number of outputs, we need to know the index of the output inside that transaction this input is referencing
+   */
   transactionOutputIndex: number;
+  /**
+   * The sender must sign this input with their private key
+   * Q: why is not the whole transaction signed instead of the individual inputs, since we use the transaction id as the content for the signature anyway?
+   */
   signature: string;
 }
 
 type Transaction = {
+  /**
+   * Derived from all other fields of the transaction, excluding signatures. When the data changes, the id should change.
+   */
   id: string;
+  /**
+   * The index of the block the transaction is attached to. This is needed to ensure that reward transaction ids are always different.
+   * Otherwise the same id would be generated each time for "John Done gets 50 coins".
+   */
+  blockHeight: number;
+  /**
+   * References to unspent outputs belonging to the user
+   */
   inputs: TransactionInput[];
+  /**
+   * All outputs must add up to the total value of all inputs. If there is some leftover, an output should be added that sends the leftover back to the sender.
+   */
   outputs: TransactionOutput[];
-  signature: string;
 }
 
 /**
@@ -31,7 +81,7 @@ type Transaction = {
  */
 function generateTransactionID(transaction: Transaction): string {
   const content = transaction.inputs.map(input => input.transactionId + input.transactionOutputIndex).join('') +
-    transaction.outputs.map(output => output.address + output.amount);
+    transaction.outputs.map(output => output.address + output.amount + transaction.blockHeight);
   return getHash(content);
 }
 
