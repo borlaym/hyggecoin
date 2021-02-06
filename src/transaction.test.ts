@@ -1,5 +1,5 @@
 import { createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, validateCoinbaseTransaction, validateTransaction } from "./transaction"
-import { generateKeysFromPassword } from "./wallet"
+import { generateKeys } from "./wallet"
 import * as ecdsa from 'elliptic';
 
 const ec = new ecdsa.ec('secp256k1');
@@ -7,10 +7,11 @@ const ec = new ecdsa.ec('secp256k1');
 /**
  * generate static keys that don't change from test to test
  */
-const { secretKey, publicKey } = generateKeysFromPassword('test');
+const { secretKey, publicKey } = generateKeys('test');
+const { publicKey: targetAddress } = generateKeys('test2');
 
 const SAMPLE_COINBASE_TRANSACTION: Transaction = {
-  id: 'a1502f05cf3551257f847eb18acf8a55c790dbce5d240f4a5cd7add0682ea191',
+  id: '1a13fb0b6fc4dfbb9e8135632443abf7b8e96a601cd9ddebeca3218db421e885',
   blockHeight: 1,
   inputs: [],
   outputs: [{
@@ -23,13 +24,16 @@ const SAMPLE_TRANSACTION: Transaction = {
   id: '',
   blockHeight: 4,
   inputs: [{
-    transactionId: 'a1502f05cf3551257f847eb18acf8a55c790dbce5d240f4a5cd7add0682ea191',
-    transactionOutputIndex: 1,
+    transactionId: '1a13fb0b6fc4dfbb9e8135632443abf7b8e96a601cd9ddebeca3218db421e885',
+    transactionOutputIndex: 0,
     signature: ''
   }],
   outputs: [{
-    address: publicKey,
+    address: targetAddress,
     amount: 5
+  }, {
+    address: publicKey,
+    amount: 45
   }]
 }
 
