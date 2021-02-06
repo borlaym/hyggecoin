@@ -1,5 +1,7 @@
 import { getHash, toHexString } from "./util";
-const ec = require('elliptic').ec;
+import * as ecdsa from 'elliptic';
+
+const ec = new ecdsa.ec('secp256k1');
 
 /**
  * Amount of coins rewarded for the miner of the block
@@ -88,8 +90,8 @@ export function generateTransactionID(transaction: Transaction): string {
 /**
  * Using your private key, sign a transaction's inputs
  */
-export function signTransactionInputs(transaction: Transaction, privateKey: string, myUnspentTransactionOutputs: UnspentTransactionOutput[]): Transaction {
-  const key = ec.keyFromPrivate(privateKey, 'hex');
+export function signTransactionInputs(transaction: Transaction, secretKey: string): Transaction {
+  const key = ec.keyFromPrivate(secretKey, 'hex');
   return ({
     ...transaction,
     inputs: transaction.inputs.map(input => {
@@ -169,4 +171,13 @@ export function validateCoinbaseTransaction(transaction: Transaction) {
     return false;
   }
   return true;
+}
+
+export function createUnspentTransactionOutputs(transaction: Transaction): UnspentTransactionOutput[] {
+  return transaction.outputs.map((output, index) => ({
+    transactionId: transaction.id,
+    index,
+    address: output.address,
+    amount: output.amount
+  }));
 }

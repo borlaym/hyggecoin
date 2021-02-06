@@ -1,23 +1,29 @@
-import { generateTransactionID, REWARD_AMOUNT, Transaction, validateCoinbaseTransaction } from "./transaction"
-import { generateKeys } from "./wallet"
+import { createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, validateCoinbaseTransaction, validateTransaction } from "./transaction"
+import { generateKeysFromPassword } from "./wallet"
+import * as ecdsa from 'elliptic';
 
-const { secretKey, publicKey } = generateKeys();
+const ec = new ecdsa.ec('secp256k1');
+
+/**
+ * generate static keys that don't change from test to test
+ */
+const { secretKey, publicKey } = generateKeysFromPassword('test');
 
 const SAMPLE_COINBASE_TRANSACTION: Transaction = {
-  id: 'd7e7438077a2c85e311f2cc32dc0cff47d1cc77a22f2a7a99552d6925f27855e',
+  id: 'a1502f05cf3551257f847eb18acf8a55c790dbce5d240f4a5cd7add0682ea191',
   blockHeight: 1,
   inputs: [],
   outputs: [{
-    address: 'fake static public key',
+    address: publicKey,
     amount: REWARD_AMOUNT
   }]
 }
 
-const SAMPLE_TRANSACTION_1: Transaction = {
+const SAMPLE_TRANSACTION: Transaction = {
   id: '',
   blockHeight: 4,
   inputs: [{
-    transactionId: 'previous-transaction-id',
+    transactionId: 'a1502f05cf3551257f847eb18acf8a55c790dbce5d240f4a5cd7add0682ea191',
     transactionOutputIndex: 1,
     signature: ''
   }],
@@ -31,6 +37,19 @@ describe('transaction', () => {
   describe('validateCoinbaseTransaction', () => {
     it('valiades successfully', () => {
       expect(validateCoinbaseTransaction(SAMPLE_COINBASE_TRANSACTION)).toBe(true);
+    })
+  })
+  describe('creating transactions', () => {
+    const transactionWithId = {
+      ...SAMPLE_TRANSACTION,
+      id: generateTransactionID(SAMPLE_TRANSACTION)
+    };
+    const signedTransaction = signTransactionInputs(transactionWithId, secretKey);
+    it('signTransactionInputs', () => {
+      expect(signedTransaction.inputs[0].signature.length).toBeGreaterThan(100);
+    })
+    it('validateTransaction', () => {
+      expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(SAMPLE_COINBASE_TRANSACTION))).toBe(true)
     })
   })
 })
