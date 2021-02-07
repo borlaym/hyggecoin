@@ -1,5 +1,6 @@
 import { getHash, toHexString } from "./util";
 import * as ecdsa from 'elliptic';
+import { Chain } from "./block";
 
 const ec = new ecdsa.ec('secp256k1');
 
@@ -173,6 +174,9 @@ export function validateCoinbaseTransaction(transaction: Transaction) {
   return true;
 }
 
+/**
+ * Helper for converting a transaction's outputs into unspent transactions
+ */
 export function createUnspentTransactionOutputs(transaction: Transaction): UnspentTransactionOutput[] {
   return transaction.outputs.map((output, index) => ({
     transactionId: transaction.id,
@@ -180,4 +184,38 @@ export function createUnspentTransactionOutputs(transaction: Transaction): Unspe
     address: output.address,
     amount: output.amount
   }));
+}
+
+/**
+ * Calculate all unspent transactions at the end of a blockchain, regardless of target address
+ */
+export function calculateUnspentOutputs(chain: Chain<Transaction[]>): UnspentTransactionOutput[] {
+  return chain.reduce<UnspentTransactionOutput[]>((unspentTransactions, block) => {
+    const newUnspentOutputs: UnspentTransactionOutput[] = block.data.reduce((acc, transaction) => acc.concat(createUnspentTransactionOutputs(transaction)), []);
+    const allInputsOnThisBlock: TransactionInput[] = block.data.reduce((acc, transaction) => acc.concat(transaction.inputs), []);
+    const remainingUnspentTransactions: UnspentTransactionOutput[] = unspentTransactions.filter(unspentTransaction => {
+      // Remove unspenttransaction if the current block references it as an input
+      if (allInputsOnThisBlock.find((input, index) => input.transactionId === unspentTransaction.transactionId && index === unspentTransaction.index)) {
+        return true;
+      }
+      return false;
+    });
+    return [...remainingUnspentTransactions, ...newUnspentOutputs];
+  }, []);
+}
+
+/**
+ * Get all unspent transactions of a single user
+ */
+export function unspentTransactionsOfAddress(chain: Chain<Transaction[]>, address: string): UnspentTransactionOutput[] {
+  const allUnspentTransactions = calculateUnspentOutputs(chain);
+  return allUnspentTransactions.filter(transaction => transaction.address === address);
+}
+
+/**
+ * Get remaining coins of a single user
+ */
+export function balanceOfAddress(chain: Chain<Transaction[]>, address: string): number {
+  const unspentTransactions = unspentTransactionsOfAddress(chain, address);
+  return unspentTransactions.reduce((acc, transaction) => acc + transaction.amount, 0);
 }
