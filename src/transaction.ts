@@ -105,6 +105,23 @@ export function signTransactionInputs(transaction: Transaction, secretKey: strin
 }
 
 /**
+ * Helper for creating a transaction with calculated id, and signed
+ */
+export function createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[], blockHeight: number, secretKey: string): Transaction {
+  let transaction = {
+    id: '',
+    blockHeight,
+    inputs,
+    outputs
+  };
+  transaction = {
+    ...transaction,
+    id: generateTransactionID(transaction)
+  };
+  return signTransactionInputs(transaction, secretKey);
+}
+
+/**
  * Determines whether a transaction is valid or not, checking id and that the inputs are valid, and that inputs equal outputs
  */
 export function validateTransaction(transaction: Transaction, myUnspentTransactionOutputs: UnspentTransactionOutput[]): boolean {

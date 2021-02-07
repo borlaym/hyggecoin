@@ -1,59 +1,108 @@
-import { createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, validateCoinbaseTransaction, validateTransaction } from "./transaction"
+import { balanceOfAddress, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction"
 import { generateKeys } from "./wallet"
-import * as ecdsa from 'elliptic';
+import { Block, createBlock, validateChain } from "./block";
 
-const ec = new ecdsa.ec('secp256k1');
+const GENESIS_BLOCK: Block<Transaction[]> = {
+  previousHash: '0',
+  hash: '71ce399acfbec8338142fe71828dbadd901cbc96c907d67ea61110dc08b272ae',
+  timestamp: 0,
+  data: [],
+  nonce: 1
+};
 
 /**
  * generate static keys that don't change from test to test
  */
-const { secretKey, publicKey } = generateKeys('test');
-const { publicKey: targetAddress } = generateKeys('test2');
+const { secretKey: aliceSecret, publicKey: alicePublic } = generateKeys('test');
+const { secretKey: bruceSecret, publicKey: brucePublic } = generateKeys('test2');
 
-const SAMPLE_COINBASE_TRANSACTION: Transaction = {
-  id: '1a13fb0b6fc4dfbb9e8135632443abf7b8e96a601cd9ddebeca3218db421e885',
-  blockHeight: 1,
-  inputs: [],
-  outputs: [{
-    address: publicKey,
-    amount: REWARD_AMOUNT
-  }]
-}
+const BLOCK_1_COINBASE_TRANSACTION = createTransaction([], [{
+  address: alicePublic,
+  amount: REWARD_AMOUNT
+}], 1, aliceSecret);
 
-const SAMPLE_TRANSACTION: Transaction = {
-  id: '',
-  blockHeight: 4,
-  inputs: [{
-    transactionId: '1a13fb0b6fc4dfbb9e8135632443abf7b8e96a601cd9ddebeca3218db421e885',
-    transactionOutputIndex: 0,
-    signature: ''
-  }],
-  outputs: [{
-    address: targetAddress,
-    amount: 5
-  }, {
-    address: publicKey,
-    amount: 45
-  }]
-}
+const BLOCK_1_ALICE_SENDS_TO_BRUCE = createTransaction([{
+  transactionId: BLOCK_1_COINBASE_TRANSACTION.id,
+  transactionOutputIndex: 0,
+  signature: ''
+}], [{
+  address: brucePublic,
+  amount: 5
+}, {
+  address: alicePublic,
+  amount: 45
+}], 2, aliceSecret);
+
+const BLOCK_2_COINBASE_TRANSACTION = createTransaction([], [{
+  address: alicePublic,
+  amount: REWARD_AMOUNT
+}], 2, aliceSecret);
+
+const BLOCK_2_ALICE_SENDS_TO_BRUCE = createTransaction([{
+  transactionId: BLOCK_1_ALICE_SENDS_TO_BRUCE.id,
+  transactionOutputIndex: 1,
+  signature: ''
+}], [{
+  address: brucePublic,
+  amount: 10
+}, {
+  address: alicePublic,
+  amount: 35
+}], 2, aliceSecret);
+
+const BLOCK_3_COINBASE_TRANSACTION = createTransaction([], [{
+  address: alicePublic,
+  amount: REWARD_AMOUNT
+}], 3, aliceSecret);
+
+const BLOCK_3_BRUCE_SENDS_TO_ALICE = createTransaction([{
+  transactionId: BLOCK_1_ALICE_SENDS_TO_BRUCE.id,
+  transactionOutputIndex: 0,
+  signature: ''
+}, {
+  transactionId: BLOCK_2_ALICE_SENDS_TO_BRUCE.id,
+  transactionOutputIndex: 0,
+  signature: ''
+}], [{
+  address: alicePublic,
+  amount: 12
+}, {
+  address: brucePublic,
+  amount: 3
+}], 3, bruceSecret);
+
 
 describe('transaction', () => {
   describe('validateCoinbaseTransaction', () => {
     it('valiades successfully', () => {
-      expect(validateCoinbaseTransaction(SAMPLE_COINBASE_TRANSACTION)).toBe(true);
+      expect(validateCoinbaseTransaction(BLOCK_1_COINBASE_TRANSACTION)).toBe(true);
     })
   })
   describe('creating transactions', () => {
     const transactionWithId = {
-      ...SAMPLE_TRANSACTION,
-      id: generateTransactionID(SAMPLE_TRANSACTION)
+      ...BLOCK_1_ALICE_SENDS_TO_BRUCE,
+      id: generateTransactionID(BLOCK_1_ALICE_SENDS_TO_BRUCE)
     };
-    const signedTransaction = signTransactionInputs(transactionWithId, secretKey);
+    const signedTransaction = signTransactionInputs(transactionWithId, aliceSecret);
     it('signTransactionInputs', () => {
-      expect(signedTransaction.inputs[0].signature.length).toBeGreaterThan(100);
+      expect(BLOCK_1_ALICE_SENDS_TO_BRUCE.inputs[0].signature.length).toBeGreaterThan(100);
     })
     it('validateTransaction', () => {
-      expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(SAMPLE_COINBASE_TRANSACTION))).toBe(true)
+      expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION))).toBe(true)
     })
+  })
+  describe('calculating unspent outputs', () => {
+    const block1 = createBlock([BLOCK_1_COINBASE_TRANSACTION, BLOCK_1_ALICE_SENDS_TO_BRUCE], GENESIS_BLOCK.hash);
+    const block2 = createBlock([BLOCK_2_COINBASE_TRANSACTION, BLOCK_2_ALICE_SENDS_TO_BRUCE], block1.hash);
+    const block3 = createBlock([BLOCK_3_COINBASE_TRANSACTION, BLOCK_3_BRUCE_SENDS_TO_ALICE], block2.hash);
+    const blockChain = [
+      GENESIS_BLOCK,
+      block1,
+      block2,
+      block3
+    ];
+    expect(validateChain(blockChain)).toBe(true);
+    expect(balanceOfAddress(blockChain, alicePublic)).toBe(147);
+    expect(balanceOfAddress(blockChain, brucePublic)).toBe(3);
   })
 })
