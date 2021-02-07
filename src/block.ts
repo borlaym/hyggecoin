@@ -1,51 +1,76 @@
 import { getHash } from "./util";
 
-type Data = {
-  [key: string]: any
-}
-
-type Block = {
+/**
+ * A single block in a blockchain
+ */
+export type Block<T> = {
+  /**
+   * Reference to the previous block. Since the blockchain is basically a linked list, this is how we know they string together.
+   * Also included in the current block's hash, so that the chain can't be altered without altering all the rest of it
+   */
   previousHash: string;
+  /**
+   * Computed from the data, timestamp, previous block's hash and nonce. Any of those change, and the hash changes.
+   */
   hash: string;
+  /**
+   * Time of block creation
+   */
   timestamp: number;
-  data: Data;
+  /**
+   * Arbitrary data. In a cryptocurrency, this will hold the transactions encoded in the block
+   */
+  data: T;
+  /**
+   * A random number included at the end of the content for hash calculation, that resulted in the block passing the difficulty test
+   */
   nonce: number
 }
 
-type Chain = Block[];
+/**
+ * A linked list of blocks
+ */
+export type Chain<T> = Block<T>[];
 
-const GENESIS_BLOCK: Block = {
-  previousHash: '0',
-  hash: '71ce399acfbec8338142fe71828dbadd901cbc96c907d67ea61110dc08b272ae',
-  timestamp: 0,
-  data: {},
-  nonce: 1
-};
-
-
-
-function calculateBlockHash({
+/**
+ * Calculate a block's hash based on all its other information, ensuring that you can't change the contents of the block without the hash changing
+ * Uses sha256
+ */
+export function calculateBlockHash<T>({
   previousHash,
   timestamp,
   data,
   nonce
-}: Block) {
+}: Block<T>): string {
   return getHash(previousHash + timestamp + JSON.stringify(data) + nonce);
 }
 
-function updateHash(block: Block) {
+/**
+ * Update a block with its calculated hash and return the resulting block.
+ * When you create a block, you should leave the hash empty and call this function.
+ */
+export function updateHash<T>(block: Block<T>): Block<T> {
   return { ...block, hash: calculateBlockHash(block) };
 }
 
-function nextNonce(block: Block) {
+/**
+ * Update the block with a new once and corresponding hash, and return the resulting block
+ */
+export function nextNonce<T>(block: Block<T>): Block<T> {
   return updateHash({ ...block, nonce: block.nonce + 1 })
 }
 
-function checkDifficulty(difficulty: number, hash: string) {
+/**
+ * Check whether a sha256 hash matches a given difficulty, meaning whether it starts with difficulty number of 0s
+ */
+export function checkDifficulty(difficulty: number, hash: string): boolean {
   return hash.substr(0, difficulty) === "0".repeat(difficulty)
 }
 
-function mineBlock(difficulty: number, block: Block) {
+/**
+ * Change the nonce property of a block until the resulting hash passes the given difficulty
+ */
+export function mineBlock<T>(difficulty: number, block: Block<T>) {
   let finishedBlock = block;
   while (!checkDifficulty(difficulty, finishedBlock.hash)) {
     finishedBlock = nextNonce(finishedBlock);
@@ -54,20 +79,23 @@ function mineBlock(difficulty: number, block: Block) {
   return finishedBlock;
 }
 
-function addBlock(chain: Chain, data: Data) {
-  const { hash: previousHash } = chain[chain.length - 1];
-  const block: Block = {
-    timestamp: + new Date(),
+/**
+ * Helper for creating a block with a calculated hash
+ */
+export function createBlock<T>(data: T, previousHash: string): Block<T> {
+  return updateHash({
+    timestamp: Date.now(),
     data,
     previousHash,
     hash: '',
     nonce: 0
-  }
-  const newBlock = mineBlock(2, block);
-  return [...chain, newBlock];
+  });
 }
 
-function validateChain(chain: Chain) {
+/**
+ * Validates a chain, ensuring that all blocks' hash are correct and they chain together
+ */
+export function validateChain<T>(chain: Chain<T>) {
   return chain.map((block, i) => {
     if (i === 0) {
       return true;
