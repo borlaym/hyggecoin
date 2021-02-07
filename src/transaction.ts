@@ -207,15 +207,16 @@ export function createUnspentTransactionOutputs(transaction: Transaction): Unspe
  * Calculate all unspent transactions at the end of a blockchain, regardless of target address
  */
 export function calculateUnspentOutputs(chain: Chain<Transaction[]>): UnspentTransactionOutput[] {
+  // TODO: I think there is a bug now when the input references a transaction in the same block
   return chain.reduce<UnspentTransactionOutput[]>((unspentTransactions, block) => {
     const newUnspentOutputs: UnspentTransactionOutput[] = block.data.reduce((acc, transaction) => acc.concat(createUnspentTransactionOutputs(transaction)), []);
     const allInputsOnThisBlock: TransactionInput[] = block.data.reduce((acc, transaction) => acc.concat(transaction.inputs), []);
     const remainingUnspentTransactions: UnspentTransactionOutput[] = unspentTransactions.filter(unspentTransaction => {
       // Remove unspenttransaction if the current block references it as an input
-      if (allInputsOnThisBlock.find((input, index) => input.transactionId === unspentTransaction.transactionId && index === unspentTransaction.index)) {
-        return true;
+      if (allInputsOnThisBlock.find(input => input.transactionId === unspentTransaction.transactionId && input.transactionOutputIndex === unspentTransaction.index)) {
+        return false;
       }
-      return false;
+      return true;
     });
     return [...remainingUnspentTransactions, ...newUnspentOutputs];
   }, []);
