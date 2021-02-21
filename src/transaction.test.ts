@@ -82,6 +82,15 @@ const BLOCK_4_ALICE_SENDS_SOME_BACK = createTransaction([{
   amount: 10
 }], 4, bruceSecret);
 
+const UNCONFIRMED_TRANSACTION = createTransaction([{
+  transactionId: BLOCK_1_COINBASE_TRANSACTION.id,
+  transactionOutputIndex: 0,
+  signature: ''
+}], [{
+  address: brucePublic,
+  amount: 50
+}], 2, aliceSecret);
+
 describe('transaction', () => {
   describe('validateCoinbaseTransaction', () => {
     it('valiades successfully', () => {
@@ -99,6 +108,9 @@ describe('transaction', () => {
     })
     it('validateTransaction', () => {
       expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [])).toBe(true)
+    })
+    it('validateTransaction should return false if a referenced output is already among unconfirmed transactions', () => {
+      expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [UNCONFIRMED_TRANSACTION])).toBe(false)
     })
   })
   describe('calculating unspent outputs', () => {
