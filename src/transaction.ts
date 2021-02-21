@@ -245,3 +245,27 @@ export function balanceOfAddress(chain: Chain<Transaction[]>, address: string): 
   const unspentTransactions = unspentTransactionsOfAddress(chain, address);
   return unspentTransactions.reduce((acc, transaction) => acc + transaction.amount, 0);
 }
+
+/**
+ * Helper for creating an input from an unspent output
+ */
+export function createUnsignedInputFromUnspentOutput(output: UnspentTransactionOutput): TransactionInput {
+  return {
+    transactionId: output.transactionId,
+    transactionOutputIndex: output.index,
+    signature: ''
+  };
+}
+
+/**
+ * Helper for creating a one way transaction output
+ */
+export function createOutputs(myPublicKey: string, receiverPublicKey: string, amount: number, leftoverAmount: number): TransactionOutput[] {
+  return [{
+    address: receiverPublicKey,
+    amount
+  }, {
+    address: myPublicKey,
+    amount: leftoverAmount
+  }]
+}

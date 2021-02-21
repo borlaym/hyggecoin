@@ -97,9 +97,14 @@ export function createBlock<T>(data: T, previousHash: string): Block<T> {
  */
 export function validateChain<T>(chain: Chain<T>) {
   return chain.map((block, i) => {
+    // Genesis block is always valid
     if (i === 0) {
       return true;
     }
-    return (block.hash === calculateBlockHash(block) && block.previousHash === chain[i -1].hash);
+    // Validate the block
+    return (
+      block.hash === calculateBlockHash(block) && // block hash checks out
+      block.previousHash === chain[i -1].hash // previousHash is the save as previous block's hash
+    );
   }).filter(isValid => !isValid).length === 0;
 }

@@ -1,7 +1,7 @@
 // Fake a db until everything is ready. I don't want to reset the db every time I change something
 
-import { Block, Chain } from "./block";
-import { calculateUnspentOutputs, Transaction, validateTransaction } from "./transaction";
+import { Block, Chain, validateChain } from "./block";
+import { calculateUnspentOutputs, createOutputs, createUnsignedInputFromUnspentOutput, Transaction, UnspentTransactionOutput, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction";
 
 export const GENESIS_BLOCK: Block<Transaction[]> = {
   previousHash: '0',
@@ -39,4 +39,54 @@ export async function addTransaction(transaction: Transaction): Promise<boolean>
     return true;
   }
   return false;
+}
+
+export async function getUnconfirmedTransactions(): Promise<Transaction[]> {
+  return unconfirmedTransactions;
+}
+
+export async function addBlock(block: Block<Transaction[]>): Promise<boolean> {
+  if (!validateCoinbaseTransaction(block.data[0])) {
+    return false;
+  }
+  if (!validateChain([...currentChain, block])) {
+    return false;
+  }
+  currentChain = [...currentChain, block];
+  return true;
+}
+
+export async function getCoinsInCirculation(): Promise<number> {
+  return calculateUnspentOutputs(currentChain).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+}
+
+export async function getBalance(publicKey: string): Promise<number> {
+  return calculateUnspentOutputs(currentChain).filter(output => output.address === publicKey).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+}
+
+export async function findUnspentOutputsForAmount(myUnspentTransactionOutputs: UnspentTransactionOutput[], requestedAmount: number): Promise<{ includedOutputs: UnspentTransactionOutput[], leftoverAmount: number }> {
+  let currentAmount = 0;
+  const includedOutputs = [];
+  for (let i = 0; i < myUnspentTransactionOutputs.length; i++) {
+    currentAmount += myUnspentTransactionOutputs[i].amount;
+    includedOutputs.push(myUnspentTransactionOutputs[i]);
+    if (currentAmount >= requestedAmount) {
+      return {
+        includedOutputs,
+        leftoverAmount: currentAmount - requestedAmount
+      };
+    }
+  }
+  throw new Error('Requested more outputs than available coins');
+}
+
+export async function sendCoins(myPublicKey: string, targetPublicKey: string, amount: number): Promise<Transaction> {
+  const myUnspentTransactionOutputs = unspentTransactionsOfAddress(currentChain, myPublicKey);
+  const { includedOutputs, leftoverAmount } = await findUnspentOutputsForAmount(myUnspentTransactionOutputs, amount);
+  return {
+    id: '',
+    blockHeight: currentChain.length,
+    inputs: includedOutputs.map(output => createUnsignedInputFromUnspentOutput(output)),
+    outputs: createOutputs(myPublicKey, targetPublicKey, amount, leftoverAmount)
+  }
 }
