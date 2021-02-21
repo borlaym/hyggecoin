@@ -80,7 +80,7 @@ export async function findUnspentOutputsForAmount(myUnspentTransactionOutputs: U
   throw new Error('Requested more outputs than available coins');
 }
 
-export async function sendCoins(myPublicKey: string, targetPublicKey: string, amount: number): Promise<Transaction> {
+export async function createTransaction(myPublicKey: string, targetPublicKey: string, amount: number): Promise<Transaction> {
   const myUnspentTransactionOutputs = unspentTransactionsOfAddress(currentChain, myPublicKey);
   const { includedOutputs, leftoverAmount } = await findUnspentOutputsForAmount(myUnspentTransactionOutputs, amount);
   return {
