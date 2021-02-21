@@ -124,10 +124,18 @@ export function createTransaction(inputs: TransactionInput[], outputs: Transacti
 /**
  * Determines whether a transaction is valid or not, checking id and that the inputs are valid, and that inputs equal outputs
  */
-export function validateTransaction(transaction: Transaction, myUnspentTransactionOutputs: UnspentTransactionOutput[]): boolean {
+export function validateTransaction(transaction: Transaction, myUnspentTransactionOutputs: UnspentTransactionOutput[], unconfirmedTransactions: Transaction[]): boolean {
   // Validate id
   if (generateTransactionID(transaction) !== transaction.id) {
     console.error('Transaction ID incorrect.')
+    return false;
+  }
+
+  // Validate that the transaction doesn't reference an input that has already been referenced by another unconfirmed transaction
+  const allExistingInputs: TransactionInput[] = unconfirmedTransactions.reduce((arr, transaction) => [...arr, ...transaction.inputs], []);
+  const referencesLockedTransaction = transaction.inputs.find(newInput => allExistingInputs.find(existingInput => existingInput.transactionId === newInput.transactionId && existingInput.transactionOutputIndex && newInput.transactionOutputIndex));
+  if (referencesLockedTransaction) {
+    console.error('Transaction references an output already used by another unconfirmed transaction');
     return false;
   }
 

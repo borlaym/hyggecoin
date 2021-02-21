@@ -1,14 +1,7 @@
-import { balanceOfAddress, calculateUnspentOutputs, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction"
+import { balanceOfAddress, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, validateCoinbaseTransaction, validateTransaction } from "./transaction"
 import { generateKeys } from "./wallet"
-import { Block, createBlock, validateChain } from "./block";
-
-const GENESIS_BLOCK: Block<Transaction[]> = {
-  previousHash: '0',
-  hash: '71ce399acfbec8338142fe71828dbadd901cbc96c907d67ea61110dc08b272ae',
-  timestamp: 0,
-  data: [],
-  nonce: 1
-};
+import { createBlock, validateChain } from "./block";
+import { GENESIS_BLOCK } from "./db";
 
 /**
  * generate static keys that don't change from test to test
@@ -105,7 +98,7 @@ describe('transaction', () => {
       expect(BLOCK_2_ALICE_SENDS_TO_BRUCE.inputs[0].signature.length).toBeGreaterThan(100);
     })
     it('validateTransaction', () => {
-      expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION))).toBe(true)
+      expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [])).toBe(true)
     })
   })
   describe('calculating unspent outputs', () => {
