@@ -122,6 +122,16 @@ export function createTransaction(inputs: TransactionInput[], outputs: Transacti
 }
 
 /**
+ * Helper for creating a coinbase transaction
+ */
+export function createCoinbaseTransaction(blockHeight: number, publicKey: string, secretKey: string): Transaction {
+  return createTransaction([], [{
+    address: publicKey,
+    amount: REWARD_AMOUNT
+  }], blockHeight, secretKey);
+}
+
+/**
  * Determines whether a transaction is valid or not, checking id and that the inputs are valid, and that inputs equal outputs
  */
 export function validateTransaction(transaction: Transaction, myUnspentTransactionOutputs: UnspentTransactionOutput[], unconfirmedTransactions: Transaction[]): boolean {
