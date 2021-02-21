@@ -18,5 +18,11 @@ fetch('http://localhost:9000/chain')
     const coinbaseTransaction = createCoinbaseTransaction(chain.length, options.publicKey, options.secretKey);
     const block = createBlock([coinbaseTransaction], chain[chain.length - 1].hash);
     const minedBlock = mineBlock(2, block);
+    fetch('http://localhost:9000/mine-block', { method: 'POST', headers: {
+      'Content-Type': 'application/json'
+    }, body: JSON.stringify(minedBlock)})
+      .then(res => res.json())
+      .then(res => console.log(res))
+      .catch(err => console.error(err));
   })
-  .catch(err => console.log(err))
+  .catch(err => console.error(err))

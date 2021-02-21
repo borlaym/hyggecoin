@@ -22,7 +22,7 @@ let currentChain: Chain<Transaction[]> = [GENESIS_BLOCK];
 let unconfirmedTransactions: Transaction[] = [];
 
 export async function getBlocks(): Promise<Chain<Transaction[]>> {
-  return currentChain.slice(1);
+  return currentChain;
 }
 
 export async function getBlockByHash(hash: string): Promise<Block<Transaction[]> | null> {
