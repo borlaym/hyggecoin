@@ -5,7 +5,7 @@ const crypto = require('crypto');
 
 const SALT = '&)(*&#$&*oh my god what a salt this is,;[]0=-0-=0_+;``';
 
-type Wallet = {
+export type Wallet = {
   publicKey: string;
   secretKey: string;
   name: string;
@@ -66,7 +66,6 @@ export function getToken(name: string, password: string): string | false {
   return token;
 }
 
-export function authenticate(name: string, token: string): boolean {
-  const wallet = wallets.find(wallet => wallet.name === name);
-  return wallet.tokens.includes(token);
+export function authenticate(token: string): Wallet | undefined {
+  return wallets.find(wallet => wallet.tokens.includes(token));
 }
