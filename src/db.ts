@@ -11,10 +11,26 @@ export const GENESIS_BLOCK: Block<Transaction[]> = {
   nonce: 1
 };
 
+const SAMPLE_BLOCK: Block<Transaction[]> = {
+  timestamp: 1614453641824,
+  data: [{
+    id: "5071058c5c8091318f0cbab749fd0ce32ce2052cb417f822d512144509a76f42",
+    blockHeight: 1,
+    inputs: [],
+    outputs: [{
+      address: "04b77787ca1df318e2e515252a4cfa643883934188ad390380108559e050867f99cf5f4a2c63251a337563bb916796c60f7a7705b7d9b05442e1c04bfd00cc918a",
+      amount: 50
+    }]
+  }],
+  previousHash: "71ce399acfbec8338142fe71828dbadd901cbc96c907d67ea61110dc08b272ae",
+  hash: "0086fc73140b33f0037fdc24382ed7b0d6fec3dc14ab275a0f4058f84e27050b",
+  nonce: 423
+};
+
 /**
  * This is the blockchain itself, persisting between request but not between restarts
  */
-let currentChain: Chain<Transaction[]> = [GENESIS_BLOCK];
+let currentChain: Chain<Transaction[]> = [GENESIS_BLOCK, SAMPLE_BLOCK];
 
 /**
  * Transactions that have been initiated, validated, but have yet to be mined and attached to a block

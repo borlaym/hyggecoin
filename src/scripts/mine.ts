@@ -11,6 +11,10 @@ const optionDefinitions = [
 
 const options = commandLineArgs(optionDefinitions);
 
+if (!options.publicKey || !options.secretKey) {
+  throw new Error("Keys need to be specified")
+}
+
 fetch('http://localhost:9000/chain')
   .then(res => res.json())
   .then(res => res.data)

@@ -2,6 +2,7 @@ import express, { ErrorRequestHandler, NextFunction } from 'express';
 import { authenticate, createWallet, getToken } from './wallet';
 import bodyParser from 'body-parser';
 import { addBlock, addTransaction, createTransaction, getBlocks } from './db';
+import { signTransaction, signTransactionInputs } from './transaction';
 const app = express();
 
 app.use(bodyParser.urlencoded({
@@ -54,6 +55,7 @@ app.use('/authenticated', function (req, res, next) {
     req.wallet = wallet;
     return next();
   }
+  console.error('Unauthorized');
   return next(new Error('Unauthorized'));
 });
 
@@ -61,12 +63,17 @@ app.post('/authenticated/send-coins', function (req, res, next) {
   const { target, amount } = req.body;
   createTransaction(req.wallet.publicKey, target, amount)
     .then(transaction => {
-      addTransaction(transaction);
+      const signedTransaction = signTransaction(transaction, req.wallet.secretKey);
+      addTransaction(signedTransaction);
+      console.log(signedTransaction);
       res.send({
         data: 'success'
       })
     })
-    .catch(err => next(err));
+    .catch(err => {
+      console.error(err);
+      next(err)
+    });
 })
 
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {

@@ -1,0 +1,5 @@
+Mine with Alice
+yarn mine -p 04b77787ca1df318e2e515252a4cfa643883934188ad390380108559e050867f99cf5f4a2c63251a337563bb916796c60f7a7705b7d9b05442e1c04bfd00cc918a -s 869cd7bdcfc5fee6dc0ea48155115a33953dc55ebbbb282d5960443de89412b5
+
+Transfer 30 coins from Alice to Bruce
+curl http://localhost:9000/authenticated/send-coins -X POST -H "Content-Type: application/json" -H "Authorization: Bearer 468233fbe015a8412b78b8f25d7a12c38287b3bca6d6d892438c141655ded1e0" -d '{ "target": "0437a334c1dbabfd5f6f3b286d4c6f933bc54326310f6a2089e8f02a107313ca17228c46f746b9f75986b8a64fc4f8a69c003932cbb9bcf077a97886003401f185", "amount": 30 }'

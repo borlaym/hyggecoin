@@ -105,6 +105,17 @@ export function signTransactionInputs(transaction: Transaction, secretKey: strin
 }
 
 /**
+ * Using your private key, sign a transaction's inputs and generate its id
+ */
+export function signTransaction(transaction: Transaction, secretKey: string): Transaction {
+  const signedInputs = signTransactionInputs(transaction, secretKey);
+  return {
+    ...signedInputs,
+    id: generateTransactionID(transaction)
+  }
+}
+
+/**
  * Helper for creating a transaction with calculated id, and signed
  */
 export function createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[], blockHeight: number, secretKey: string): Transaction {
