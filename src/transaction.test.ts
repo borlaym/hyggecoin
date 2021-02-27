@@ -110,7 +110,9 @@ describe('transaction', () => {
       expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [])).toBe(true)
     })
     it('validateTransaction should return false if a referenced output is already among unconfirmed transactions', () => {
-      expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [UNCONFIRMED_TRANSACTION])).toBe(false)
+      expect(() =>
+        validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [UNCONFIRMED_TRANSACTION])
+      ).toThrowError('Transaction references an output already used by another unconfirmed transaction')
     })
   })
   describe('calculating unspent outputs', () => {
