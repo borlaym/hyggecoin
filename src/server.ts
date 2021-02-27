@@ -1,7 +1,7 @@
 import express, { ErrorRequestHandler, NextFunction } from 'express';
 import { authenticate, createWallet, getToken } from './wallet';
 import bodyParser from 'body-parser';
-import { addBlock, addTransaction, createTransaction, getBlocks } from './db';
+import { addBlock, addTransaction, createTransaction, getBlocks, getUnconfirmedTransactions } from './db';
 import { signTransaction, signTransactionInputs } from './transaction';
 const app = express();
 
@@ -19,6 +19,13 @@ app.get('/chain', async (req, res) => {
     data: chain
   });
 });
+
+app.get('/unconfirmed-transactions', async (req, res) => {
+  const transactions = await getUnconfirmedTransactions();
+  res.send({
+    data: transactions
+  });
+})
 
 app.post('/create-wallet', function(req, res, next) {
   const { name, password } = req.body;
@@ -63,26 +70,28 @@ app.post('/authenticated/send-coins', function (req, res, next) {
   const { target, amount } = req.body;
   createTransaction(req.wallet.publicKey, target, amount)
     .then(transaction => {
+      console.log(req.wallet.secretKey);
       const signedTransaction = signTransaction(transaction, req.wallet.secretKey);
-      addTransaction(signedTransaction);
-      console.log(signedTransaction);
-      res.send({
-        data: 'success'
+      addTransaction(signedTransaction)
+      .then(() => {
+        console.log(signedTransaction);
+        res.send({
+          data: 'success'
+        })
       })
+      .catch(err => next(err));
     })
-    .catch(err => {
-      console.error(err);
-      next(err)
-    });
+    .catch(err => next(err));
 })
 
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   res.send({
     data: null,
-    error: err
+    error: err.message
   });
 }
 
 app.use('*', errorHandler)
 
+console.log('Listening on port 9000');
 app.listen(9000);

@@ -108,11 +108,10 @@ export function signTransactionInputs(transaction: Transaction, secretKey: strin
  * Using your private key, sign a transaction's inputs and generate its id
  */
 export function signTransaction(transaction: Transaction, secretKey: string): Transaction {
-  const signedInputs = signTransactionInputs(transaction, secretKey);
-  return {
-    ...signedInputs,
+  return signTransactionInputs({
+    ...transaction,
     id: generateTransactionID(transaction)
-  }
+  }, secretKey);
 }
 
 /**
@@ -148,22 +147,21 @@ export function createCoinbaseTransaction(blockHeight: number, publicKey: string
 export function validateTransaction(transaction: Transaction, myUnspentTransactionOutputs: UnspentTransactionOutput[], unconfirmedTransactions: Transaction[]): boolean {
   // Validate id
   if (generateTransactionID(transaction) !== transaction.id) {
-    console.error('Transaction ID incorrect.')
-    return false;
+    throw new Error('Transaction ID incorrect');
   }
 
   // Validate that the transaction doesn't reference an input that has already been referenced by another unconfirmed transaction
   const allExistingInputs: TransactionInput[] = unconfirmedTransactions.reduce((arr, transaction) => [...arr, ...transaction.inputs], []);
   const referencesLockedTransaction = transaction.inputs.find(newInput => allExistingInputs.find(existingInput => existingInput.transactionId === newInput.transactionId && existingInput.transactionOutputIndex == newInput.transactionOutputIndex));
   if (referencesLockedTransaction) {
-    console.error('Transaction references an output already used by another unconfirmed transaction');
-    return false;
+    throw new Error('Transaction references an output already used by another unconfirmed transaction');
   }
 
   // Validate that all inputs are unspent and belong to the user
   const allInputsValid = transaction.inputs.map(input => {
     const referencedOutput = myUnspentTransactionOutputs.find(unspentOutput => unspentOutput.transactionId === input.transactionId && unspentOutput.index === input.transactionOutputIndex);
     if (!referencedOutput) {
+      console.error('Referenced output doesn\'t exist');
       return false;
     }
     const address = referencedOutput.address;
@@ -172,8 +170,7 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
   }).filter(Boolean).length === transaction.inputs.length;
 
   if (!allInputsValid) {
-    console.error('Not all inputs are valid for transaction.')
-    return false;
+    throw new Error('Not all inputs are valid for transaction.')
   }
 
   // Check that all inputs equal outputs
@@ -186,8 +183,7 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
   }, 0);
   const outputValue = transaction.outputs.reduce((acc, output) => acc + output.amount, 0);
   if (inputValue !== outputValue) {
-    console.error('Input and output values do not match in transaction.');
-    return false;
+    throw new Error('Input and output values do not match in transaction.');
   }
   return true;
 }
@@ -202,20 +198,17 @@ export function validateCoinbaseTransaction(transaction: Transaction) {
   // Validate id
   const generatedId = generateTransactionID(transaction);
   if (generatedId !== transaction.id) {
-    console.error('Transaction ID incorrect.')
-    return false;
+    throw new Error('Transaction ID incorrect.')
   }
 
   // TODO / Q: check input?
 
   if (transaction.outputs.length !== 1) {
-    console.error('Coinbase transaction can only have one output.');
-    return false;
+    throw new Error('Coinbase transaction can only have one output.');
   }
 
   if (transaction.outputs[0].amount !== REWARD_AMOUNT) {
-    console.error('Coinbase transaction value must be for ' + REWARD_AMOUNT);
-    return false;
+    throw new Error('Coinbase transaction value must be for ' + REWARD_AMOUNT);
   }
   return true;
 }
