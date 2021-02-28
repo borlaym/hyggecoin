@@ -11,6 +11,11 @@ app.use(bodyParser.urlencoded({
 
 app.use(bodyParser.json());
 
+app.use('*', (req, res, next) => {
+  res.setHeader('access-control-allow-origin', '*');
+  next();
+})
+
 app.get('/', (req, res) => res.send('Hyggecoin Exchange'));
 
 app.get('/chain', async (req, res) => {

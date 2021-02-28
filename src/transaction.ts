@@ -151,7 +151,7 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
   }
 
   // Validate that the transaction doesn't reference an input that has already been referenced by another unconfirmed transaction
-  const allExistingInputs: TransactionInput[] = unconfirmedTransactions.reduce((arr, transaction) => [...arr, ...transaction.inputs], []);
+  const allExistingInputs = unconfirmedTransactions.reduce<TransactionInput[]>((arr, transaction) => [...arr, ...transaction.inputs], []);
   const referencesLockedTransaction = transaction.inputs.find(newInput => allExistingInputs.find(existingInput => existingInput.transactionId === newInput.transactionId && existingInput.transactionOutputIndex == newInput.transactionOutputIndex));
   if (referencesLockedTransaction) {
     throw new Error('Transaction references an output already used by another unconfirmed transaction');
@@ -231,8 +231,8 @@ export function createUnspentTransactionOutputs(transaction: Transaction): Unspe
 export function calculateUnspentOutputs(chain: Chain<Transaction[]>): UnspentTransactionOutput[] {
   // TODO: I think there is a bug now when the input references a transaction in the same block
   return chain.reduce<UnspentTransactionOutput[]>((unspentTransactions, block) => {
-    const newUnspentOutputs: UnspentTransactionOutput[] = block.data.reduce((acc, transaction) => acc.concat(createUnspentTransactionOutputs(transaction)), []);
-    const allInputsOnThisBlock: TransactionInput[] = block.data.reduce((acc, transaction) => acc.concat(transaction.inputs), []);
+    const newUnspentOutputs = block.data.reduce<UnspentTransactionOutput[]>((acc, transaction) => acc.concat(createUnspentTransactionOutputs(transaction)), []);
+    const allInputsOnThisBlock = block.data.reduce<TransactionInput[]>((acc, transaction) => acc.concat(transaction.inputs), []);
     const remainingUnspentTransactions: UnspentTransactionOutput[] = unspentTransactions.filter(unspentTransaction => {
       // Remove unspenttransaction if the current block references it as an input
       if (allInputsOnThisBlock.find(input => input.transactionId === unspentTransaction.transactionId && input.transactionOutputIndex === unspentTransaction.index)) {
