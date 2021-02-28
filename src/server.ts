@@ -35,7 +35,7 @@ app.get('/unconfirmed-transactions', async (req, res) => {
 
 app.post('/create-wallet', function(req, res, next) {
   const { name, password } = req.body;
-  const newWallet = createWallet(name, password);
+  const newWallet = createWallet({ name, password });
   res.json({
     name,
     publicKey: newWallet.publicKey

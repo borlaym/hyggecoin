@@ -1,5 +1,7 @@
-import { App } from '@slack/bolt';
-import { getBlocks, getLastBlock } from './db';
+import { App, UsersSelectAction } from '@slack/bolt';
+import { addTransaction, createTransaction, getBalance, getBlocks, getLastBlock } from './db';
+import { signTransaction } from './transaction';
+import { createWallet, getSlackWallet } from './wallet';
 
 const slackApp = new App({
   signingSecret: process.env.SLACK_APP_SIGNING_SECRET,
@@ -14,7 +16,9 @@ const slackApp = new App({
 })();
 
 slackApp.event('app_home_opened', async ({ event, client, context }) => {
-  console.log(context);
+  const userId = event.user;
+  let wallet = getSlackWallet(userId);
+
   try {
     /* view.publish is the method that your app uses to push a view to the Home tab */
     const result = await client.views.publish({
@@ -47,7 +51,34 @@ slackApp.event('app_home_opened', async ({ event, client, context }) => {
               "text": `Latest block: ${(await getLastBlock()).hash}`,
               "emoji": true
             }
-          }
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "section",
+            "text": {
+              "type": "plain_text",
+              "text": `Your wallet balance: ${(await getBalance(wallet.publicKey))}`,
+              "emoji": true
+            }
+          },
+          {
+            "type": "section",
+            "text": {
+              "type": "mrkdwn",
+              "text": "Send 5 coins to"
+            },
+            "accessory": {
+              "type": "users_select",
+              "placeholder": {
+                "type": "plain_text",
+                "text": "Select conversations",
+                "emoji": true
+              },
+              "action_id": "send5coins"
+            }
+          },
         ]
       }
     });
@@ -56,3 +87,22 @@ slackApp.event('app_home_opened', async ({ event, client, context }) => {
     console.error(error);
   }
 });
+
+slackApp.action('send5coins', async ({ payload, ack, body, ...others }) => {
+  const sender = body.user.id;
+  const receiver = (payload as UsersSelectAction).selected_user;
+  const senderWallet = getSlackWallet(sender);
+  const receiverWallet = getSlackWallet(receiver);
+  createTransaction(senderWallet.publicKey, receiverWallet.publicKey, 5)
+    .then(transaction => {
+      const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
+      console.log(signedTransaction);
+      addTransaction(signedTransaction)
+      .then(() => {
+        console.log('success')
+        ack();
+      })
+      .catch(err => ack(err));
+    })
+    .catch(err => ack(err));
+})

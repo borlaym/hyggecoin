@@ -8,9 +8,10 @@ const SALT = '&)(*&#$&*oh my god what a salt this is,;[]0=-0-=0_+;``';
 export type Wallet = {
   publicKey: string;
   secretKey: string;
-  name: string;
-  passwordHash: string;
-  tokens: string[]
+  name?: string;
+  passwordHash?: string;
+  tokens: string[];
+  slackId?: string;
 }
 
 let wallets: Wallet[] = [{
@@ -18,7 +19,8 @@ let wallets: Wallet[] = [{
   "secretKey": "869cd7bdcfc5fee6dc0ea48155115a33953dc55ebbbb282d5960443de89412b5",
   "name": "alice",
   "passwordHash": "2458fc44725895334c541414b3ddb78e142bf5dfae2d938b46acb1cf625f17a4", // password is test
-  "tokens": ['468233fbe015a8412b78b8f25d7a12c38287b3bca6d6d892438c141655ded1e0']
+  "tokens": ['468233fbe015a8412b78b8f25d7a12c38287b3bca6d6d892438c141655ded1e0'],
+  "slackId": 'U010VGKE9RV'
 }, {
   "publicKey": "0437a334c1dbabfd5f6f3b286d4c6f933bc54326310f6a2089e8f02a107313ca17228c46f746b9f75986b8a64fc4f8a69c003932cbb9bcf077a97886003401f185",
   "secretKey": "6fb996031dd3d7047ff156afa72b7b9edcf81d6595ab95cb8032838a1afc304f",
@@ -40,14 +42,15 @@ export function generateKeys(password?: string): { secretKey: string; publicKey:
   };
 }
 
-export function createWallet(name: string, password: string) {
+export function createWallet({ name, password, slackId } : { name?: string, password?: string, slackId?: string }) {
   const { publicKey, secretKey } = generateKeys();
   const newWallet: Wallet = {
     publicKey,
     secretKey,
     name,
     passwordHash: getHash(name + password + SALT),
-    tokens: []
+    tokens: [],
+    slackId
   };
   wallets = [...wallets, newWallet];
   return newWallet;
@@ -68,4 +71,9 @@ export function getToken(name: string, password: string): string | false {
 
 export function authenticate(token: string): Wallet | undefined {
   return wallets.find(wallet => wallet.tokens.includes(token));
+}
+
+export function getSlackWallet(id: string): Wallet | undefined {
+  const existingWallet = wallets.find(wallet => wallet.slackId === id);
+  return existingWallet || createWallet({ slackId: id });
 }
