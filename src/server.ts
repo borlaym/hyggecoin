@@ -1,8 +1,9 @@
-import express, { ErrorRequestHandler, NextFunction } from 'express';
+import express, { ErrorRequestHandler } from 'express';
 import { authenticate, createWallet, getToken } from './wallet';
 import bodyParser from 'body-parser';
 import { addBlock, addTransaction, createTransaction, getBlocks, getUnconfirmedTransactions } from './db';
-import { signTransaction, signTransactionInputs } from './transaction';
+import { signTransaction } from './transaction';
+
 const app = express();
 
 app.use(bodyParser.urlencoded({
