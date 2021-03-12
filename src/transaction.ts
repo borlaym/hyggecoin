@@ -65,11 +65,6 @@ export type Transaction = {
    */
   id: string;
   /**
-   * The index of the block the transaction is attached to. This is needed to ensure that reward transaction ids are always different.
-   * Otherwise the same id would be generated each time for "John Done gets 50 coins".
-   */
-  blockHeight: number;
-  /**
    * References to unspent outputs belonging to the user
    */
   inputs: TransactionInput[];
@@ -84,7 +79,7 @@ export type Transaction = {
  */
 export function generateTransactionID(transaction: Transaction): string {
   const content = transaction.inputs.map(input => input.transactionId + input.transactionOutputIndex).join('') +
-    transaction.outputs.map(output => output.address + output.amount + transaction.blockHeight).join('');
+    transaction.outputs.map(output => output.address + output.amount).join('');
   return getHash(content);
 }
 
@@ -117,10 +112,9 @@ export function signTransaction(transaction: Transaction, secretKey: string): Tr
 /**
  * Helper for creating a transaction with calculated id, and signed
  */
-export function createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[], blockHeight: number, secretKey: string): Transaction {
+export function createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[], secretKey: string): Transaction {
   let transaction = {
     id: '',
-    blockHeight,
     inputs,
     outputs
   };
@@ -135,10 +129,14 @@ export function createTransaction(inputs: TransactionInput[], outputs: Transacti
  * Helper for creating a coinbase transaction
  */
 export function createCoinbaseTransaction(blockHeight: number, publicKey: string, secretKey: string): Transaction {
-  return createTransaction([], [{
+  return createTransaction([{
+    transactionId: '',
+    transactionOutputIndex: blockHeight,
+    signature: ''
+  }], [{
     address: publicKey,
     amount: REWARD_AMOUNT
-  }], blockHeight, secretKey);
+  }], secretKey);
 }
 
 /**
@@ -194,14 +192,20 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
  * Q: Why does this have to have any inputs anyway? Maybe because the need to sign it? Would someone be able to steal an output otherwise?
  * Right now I'm just going to ignore the input and only have an output, before I understand this.
  */
-export function validateCoinbaseTransaction(transaction: Transaction) {
+export function validateCoinbaseTransaction(transaction: Transaction, blockHeight: number) {
   // Validate id
   const generatedId = generateTransactionID(transaction);
   if (generatedId !== transaction.id) {
     throw new Error('Transaction ID incorrect.')
   }
 
-  // TODO / Q: check input?
+  if (transaction.inputs.length !== 1) {
+    throw new Error('Coinbase transaction can only have one input.');
+  }
+
+  if (transaction.inputs[0].transactionOutputIndex !== blockHeight) {
+    throw new Error('Coinbase transaction\'s input must contain blockHeight as the output index.');
+  }
 
   if (transaction.outputs.length !== 1) {
     throw new Error('Coinbase transaction can only have one output.');

@@ -1,4 +1,4 @@
-import { balanceOfAddress, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, validateCoinbaseTransaction, validateTransaction } from "./transaction"
+import { balanceOfAddress, createCoinbaseTransaction, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, validateCoinbaseTransaction, validateTransaction } from "./transaction"
 import { generateKeys } from "./wallet"
 import { createBlock, validateChain } from "./block";
 import { GENESIS_BLOCK } from "./db";
@@ -9,15 +9,9 @@ import { GENESIS_BLOCK } from "./db";
 const { secretKey: aliceSecret, publicKey: alicePublic } = generateKeys('test');
 const { secretKey: bruceSecret, publicKey: brucePublic } = generateKeys('test2');
 
-const BLOCK_1_COINBASE_TRANSACTION = createTransaction([], [{
-  address: alicePublic,
-  amount: REWARD_AMOUNT
-}], 1, aliceSecret);
+const BLOCK_1_COINBASE_TRANSACTION = createCoinbaseTransaction(1, alicePublic, aliceSecret);
 
-const BLOCK_2_COINBASE_TRANSACTION = createTransaction([], [{
-  address: alicePublic,
-  amount: REWARD_AMOUNT
-}], 2, aliceSecret);
+const BLOCK_2_COINBASE_TRANSACTION = createCoinbaseTransaction(2, alicePublic, aliceSecret);
 
 const BLOCK_2_ALICE_SENDS_TO_BRUCE = createTransaction([{
   transactionId: BLOCK_1_COINBASE_TRANSACTION.id,
@@ -29,12 +23,9 @@ const BLOCK_2_ALICE_SENDS_TO_BRUCE = createTransaction([{
 }, {
   address: alicePublic,
   amount: 45
-}], 2, aliceSecret);
+}], aliceSecret);
 
-const BLOCK_3_COINBASE_TRANSACTION = createTransaction([], [{
-  address: alicePublic,
-  amount: REWARD_AMOUNT
-}], 3, aliceSecret);
+const BLOCK_3_COINBASE_TRANSACTION = createCoinbaseTransaction(3, alicePublic, aliceSecret);
 
 const BLOCK_3_ALICE_SENDS_TO_BRUCE = createTransaction([{
   transactionId: BLOCK_2_ALICE_SENDS_TO_BRUCE.id,
@@ -46,12 +37,9 @@ const BLOCK_3_ALICE_SENDS_TO_BRUCE = createTransaction([{
 }, {
   address: alicePublic,
   amount: 35
-}], 3, aliceSecret);
+}], aliceSecret);
 
-const BLOCK_4_COINBASE_TRANSACTION = createTransaction([], [{
-  address: alicePublic,
-  amount: REWARD_AMOUNT
-}], 4, aliceSecret);
+const BLOCK_4_COINBASE_TRANSACTION = createCoinbaseTransaction(4, alicePublic, aliceSecret);
 
 const BLOCK_4_BRUCE_SENDS_TO_ALICE = createTransaction([{
   transactionId: BLOCK_2_ALICE_SENDS_TO_BRUCE.id,
@@ -67,7 +55,7 @@ const BLOCK_4_BRUCE_SENDS_TO_ALICE = createTransaction([{
 }, {
   address: brucePublic,
   amount: 3
-}], 4, bruceSecret);
+}], bruceSecret);
 
 // Test if it works correctly if the transaction references a transaction in the same block
 const BLOCK_4_ALICE_SENDS_SOME_BACK = createTransaction([{
@@ -80,7 +68,7 @@ const BLOCK_4_ALICE_SENDS_SOME_BACK = createTransaction([{
 }, {
   address: alicePublic,
   amount: 10
-}], 4, bruceSecret);
+}], bruceSecret);
 
 const UNCONFIRMED_TRANSACTION = createTransaction([{
   transactionId: BLOCK_1_COINBASE_TRANSACTION.id,
@@ -89,12 +77,12 @@ const UNCONFIRMED_TRANSACTION = createTransaction([{
 }], [{
   address: brucePublic,
   amount: 50
-}], 2, aliceSecret);
+}], aliceSecret);
 
 describe('transaction', () => {
   describe('validateCoinbaseTransaction', () => {
     it('valiades successfully', () => {
-      expect(validateCoinbaseTransaction(BLOCK_1_COINBASE_TRANSACTION)).toBe(true);
+      expect(validateCoinbaseTransaction(BLOCK_1_COINBASE_TRANSACTION, 1)).toBe(true);
     })
   })
   describe('creating transactions', () => {
