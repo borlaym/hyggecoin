@@ -3,37 +3,36 @@ import { authenticate, createWallet, getToken } from './wallet';
 import bodyParser from 'body-parser';
 import { addBlock, addTransaction, createTransaction, getBlocks, getUnconfirmedTransactions } from './db';
 import { signTransaction } from './transaction';
+import { receiver } from './slack-server';
 
-const app = express();
-
-app.use(bodyParser.urlencoded({
+receiver.app.use(bodyParser.urlencoded({
   extended: false
 }));
 
-app.use(bodyParser.json());
+receiver.app.use(bodyParser.json());
 
-app.use('*', (req, res, next) => {
+receiver.app.use('*', (req, res, next) => {
   res.setHeader('access-control-allow-origin', '*');
   next();
 })
 
-app.get('/', (req, res) => res.send('Hyggecoin Exchange'));
+receiver.app.get('/', (req, res) => res.send('Hyggecoin Exchange'));
 
-app.get('/chain', async (req, res) => {
+receiver.app.get('/chain', async (req, res) => {
   const chain = await getBlocks();
   res.send({
     data: chain
   });
 });
 
-app.get('/unconfirmed-transactions', async (req, res) => {
+receiver.app.get('/unconfirmed-transactions', async (req, res) => {
   const transactions = await getUnconfirmedTransactions();
   res.send({
     data: transactions
   });
 })
 
-app.post('/create-wallet', function(req, res, next) {
+receiver.app.post('/create-wallet', function(req, res, next) {
   const { name, password } = req.body;
   const newWallet = createWallet({ name, password });
   res.json({
@@ -42,7 +41,7 @@ app.post('/create-wallet', function(req, res, next) {
   });
 });
 
-app.post('/authenticate', function (req, res) {
+receiver.app.post('/authenticate', function (req, res) {
   const { name, password } = req.body;
   const token = getToken(name, password);
   if (token) {
@@ -52,7 +51,7 @@ app.post('/authenticate', function (req, res) {
   }
 });
 
-app.post('/mine-block', function (req, res) {
+receiver.app.post('/mine-block', function (req, res) {
   if (addBlock(req.body)) {
     res.send({ data: 'success' });
   } else {
@@ -60,7 +59,7 @@ app.post('/mine-block', function (req, res) {
   }
 })
 
-app.use('/authenticated', function (req, res, next) {
+receiver.app.use('/authenticated', function (req, res, next) {
   const authorizationHeader = req.headers['authorization'];
   const token = authorizationHeader?.replace('Bearer ', '');
   const wallet = authenticate(token);
@@ -72,7 +71,7 @@ app.use('/authenticated', function (req, res, next) {
   return next(new Error('Unauthorized'));
 });
 
-app.post('/authenticated/send-coins', function (req, res, next) {
+receiver.app.post('/authenticated/send-coins', function (req, res, next) {
   const { target, amount } = req.body;
   createTransaction(req.wallet.publicKey, target, amount)
     .then(transaction => {
@@ -97,7 +96,4 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   });
 }
 
-app.use('*', errorHandler)
-
-console.log('Listening on port 9000');
-app.listen(9000);
+receiver.app.use('*', errorHandler)

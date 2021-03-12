@@ -1,16 +1,19 @@
-import { App, UsersSelectAction } from '@slack/bolt';
+import { App, UsersSelectAction, ExpressReceiver } from '@slack/bolt';
 import { addTransaction, createTransaction, getBalance, getBlocks, getLastBlock } from './db';
 import { signTransaction } from './transaction';
 import { createWallet, getSlackWallet } from './wallet';
 
+const receiver = new ExpressReceiver({ signingSecret: process.env.SLACK_APP_SIGNING_SECRET });
+
 const slackApp = new App({
   signingSecret: process.env.SLACK_APP_SIGNING_SECRET,
-  token: process.env.SLACK_BOT_TOKEN
+  token: process.env.SLACK_BOT_TOKEN,
+  receiver
 });
 
 (async () => {
   // Start your app
-  await slackApp.start(Number(process.env.SLACK_PORT) || 8000);
+  await slackApp.start(Number(process.env.SLACK_PORT) || 9000);
 
   console.log('⚡️ Bolt app is running!');
 })();
@@ -106,3 +109,6 @@ slackApp.action('send5coins', async ({ payload, ack, body, ...others }) => {
     })
     .catch(err => ack(err));
 })
+
+export default slackApp;
+export { receiver };
