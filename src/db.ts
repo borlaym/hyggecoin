@@ -1,7 +1,7 @@
 // Fake a db until everything is ready. I don't want to reset the db every time I change something
 
-import { Block, Chain, validateChain } from "./block";
-import { calculateUnspentOutputs, createOutputs, createUnsignedInputFromUnspentOutput, Transaction, UnspentTransactionOutput, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction";
+import { Block, Chain, createBlock, validateChain } from "./block";
+import { calculateUnspentOutputs, createOutputs, createUnsignedInputFromUnspentOutput, Transaction, TransactionInput, TransactionOutput, UnspentTransactionOutput, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction";
 
 export const GENESIS_BLOCK: Block<Transaction[]> = {
   previousHash: '0',
@@ -73,7 +73,13 @@ export async function addBlock(block: Block<Transaction[]>): Promise<boolean> {
   if (!validateChain([...currentChain, block])) {
     return false;
   }
+
+  // Update chain with new block
   currentChain = [...currentChain, block];
+
+  // Remove transactions from unconfirmedTransactions
+  unconfirmedTransactions = unconfirmedTransactions.filter(unconfirmedTransaction => !block.data.find(transactionOnBlock => transactionOnBlock.id === unconfirmedTransaction.id));
+
   return true;
 }
 
@@ -83,6 +89,18 @@ export async function getCoinsInCirculation(): Promise<number> {
 
 export async function getBalance(publicKey: string): Promise<number> {
   return calculateUnspentOutputs(currentChain).filter(output => output.address === publicKey).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+}
+
+export async function getBalanceWithUnverified(publicKey: string): Promise<{ verified: number, unverified: number }> {
+  const verified = await getBalance(publicKey);
+  const unconfirmedTransactions = await getUnconfirmedTransactions();
+  const chain = await getBlocks();
+  const unspentOutputsWithUnverified = calculateUnspentOutputs([...chain, createBlock(unconfirmedTransactions, chain[chain.length - 1].hash)]);
+
+  return {
+    verified,
+    unverified: unspentOutputsWithUnverified.filter(output => output.address === publicKey).reduce((acc, output) => acc + output.amount, 0) - verified
+  }
 }
 
 export async function findUnspentOutputsForAmount(myUnspentTransactionOutputs: UnspentTransactionOutput[], requestedAmount: number): Promise<{ includedOutputs: UnspentTransactionOutput[], leftoverAmount: number }> {
