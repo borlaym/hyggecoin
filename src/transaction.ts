@@ -183,6 +183,12 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
   if (inputValue !== outputValue) {
     throw new Error('Input and output values do not match in transaction.');
   }
+
+  // Validate that no outputs are for 0 amount
+  if (transaction.outputs.find(output => output.amount === 0)) {
+    throw new Error('Can\'t create output for 0');
+  }
+
   return true;
 }
 
