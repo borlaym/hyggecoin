@@ -55,11 +55,11 @@ export async function getLastBlock(): Promise<Block<Transaction[]> | null> {
 }
 
 export async function addTransaction(transaction: Transaction): Promise<boolean> {
-  if (validateTransaction(transaction, calculateUnspentOutputs(currentChain), unconfirmedTransactions)) {
+  if (validateTransaction(transaction, calculateUnspentOutputs(currentChain, unconfirmedTransactions), unconfirmedTransactions)) {
     unconfirmedTransactions = [...unconfirmedTransactions, transaction];
     return true;
   }
-  return false;
+  throw new Error('Unable to add transaction, invalid transaction');
 }
 
 export async function getUnconfirmedTransactions(): Promise<Transaction[]> {
@@ -68,10 +68,10 @@ export async function getUnconfirmedTransactions(): Promise<Transaction[]> {
 
 export async function addBlock(block: Block<Transaction[]>): Promise<boolean> {
   if (!validateCoinbaseTransaction(block.data[0], currentChain.length)) {
-    return false;
+    throw new Error('Invalid coinbase transaction');
   }
   if (!validateChain([...currentChain, block])) {
-    return false;
+    throw new Error('Invalid chain');
   }
 
   // Update chain with new block
@@ -84,18 +84,18 @@ export async function addBlock(block: Block<Transaction[]>): Promise<boolean> {
 }
 
 export async function getCoinsInCirculation(): Promise<number> {
-  return calculateUnspentOutputs(currentChain).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+  return calculateUnspentOutputs(currentChain, unconfirmedTransactions).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
 }
 
 export async function getBalance(publicKey: string): Promise<number> {
-  return calculateUnspentOutputs(currentChain).filter(output => output.address === publicKey).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+  return calculateUnspentOutputs(currentChain, unconfirmedTransactions).filter(output => output.address === publicKey).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
 }
 
 export async function getBalanceWithUnverified(publicKey: string): Promise<{ verified: number, unverified: number }> {
   const verified = await getBalance(publicKey);
   const unconfirmedTransactions = await getUnconfirmedTransactions();
   const chain = await getBlocks();
-  const unspentOutputsWithUnverified = calculateUnspentOutputs([...chain, createBlock(unconfirmedTransactions, chain[chain.length - 1].hash)]);
+  const unspentOutputsWithUnverified = calculateUnspentOutputs(chain, unconfirmedTransactions);
 
   return {
     verified,
@@ -120,7 +120,7 @@ export async function findUnspentOutputsForAmount(myUnspentTransactionOutputs: U
 }
 
 export async function createTransaction(myPublicKey: string, targetPublicKey: string, amount: number): Promise<Transaction> {
-  const myUnspentTransactionOutputs = unspentTransactionsOfAddress(currentChain, myPublicKey);
+  const myUnspentTransactionOutputs = unspentTransactionsOfAddress(currentChain, unconfirmedTransactions, myPublicKey);
   const { includedOutputs, leftoverAmount } = await findUnspentOutputsForAmount(myUnspentTransactionOutputs, amount);
   return {
     id: '',

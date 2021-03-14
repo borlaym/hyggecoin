@@ -117,25 +117,26 @@ describe('transaction', () => {
         block4
       ];
       expect(validateChain(blockChain)).toBe(true);
-      expect(balanceOfAddress(blockChain, alicePublic)).toBe(197);
-      expect(balanceOfAddress(blockChain, brucePublic)).toBe(3);
+      expect(balanceOfAddress(blockChain, [], alicePublic)).toBe(197);
+      expect(balanceOfAddress(blockChain, [], brucePublic)).toBe(3);
     });
-    it.skip('can spend from the yet-to-be-mined block', () => {
-      // TODO: does this need to work?
+    it('can spend from the yet-to-be-mined transactions', () => {
       const block1 = createBlock([BLOCK_1_COINBASE_TRANSACTION], GENESIS_BLOCK.hash)
       const block2 = createBlock([BLOCK_2_COINBASE_TRANSACTION, BLOCK_2_ALICE_SENDS_TO_BRUCE], block1.hash);
       const block3 = createBlock([BLOCK_3_COINBASE_TRANSACTION, BLOCK_3_ALICE_SENDS_TO_BRUCE], block2.hash);
-      const block4 = createBlock([BLOCK_4_COINBASE_TRANSACTION, BLOCK_4_BRUCE_SENDS_TO_ALICE, BLOCK_4_ALICE_SENDS_SOME_BACK], block3.hash);
       const blockChain = [
         GENESIS_BLOCK,
         block1,
         block2,
-        block3,
-        block4
+        block3
       ];
+      const unconfirmed = [
+        BLOCK_4_BRUCE_SENDS_TO_ALICE,
+        BLOCK_4_ALICE_SENDS_SOME_BACK
+      ]
       expect(validateChain(blockChain)).toBe(true);
-      expect(balanceOfAddress(blockChain, alicePublic)).toBe(195);
-      expect(balanceOfAddress(blockChain, brucePublic)).toBe(5);
+      expect(balanceOfAddress(blockChain, unconfirmed, alicePublic)).toBe(145);
+      // expect(balanceOfAddress(blockChain, unconfirmed, brucePublic)).toBe(5);
     })
   })
 })

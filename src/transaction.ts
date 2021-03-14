@@ -1,6 +1,6 @@
 import { getHash, toHexString } from "./util";
 import * as ecdsa from 'elliptic';
-import { Chain } from "./block";
+import { Chain, createBlock } from "./block";
 
 const ec = new ecdsa.ec('secp256k1');
 
@@ -232,35 +232,39 @@ export function createUnspentTransactionOutputs(transaction: Transaction): Unspe
 /**
  * Calculate all unspent transactions at the end of a blockchain, regardless of target address
  */
-export function calculateUnspentOutputs(chain: Chain<Transaction[]>): UnspentTransactionOutput[] {
+export function calculateUnspentOutputs(chain: Chain<Transaction[]>, unconfirmedTransactions: Transaction[]): UnspentTransactionOutput[] {
+  const chainWithUnconfirmed = [...chain, createBlock(unconfirmedTransactions, chain[chain.length - 1].hash)];
   // TODO: I think there is a bug now when the input references a transaction in the same block
-  return chain.reduce<UnspentTransactionOutput[]>((unspentTransactions, block) => {
+  return chainWithUnconfirmed.reduce<UnspentTransactionOutput[]>((unspentTransactions, block) => {
+    // Gather all new outputs on this block
     const newUnspentOutputs = block.data.reduce<UnspentTransactionOutput[]>((acc, transaction) => acc.concat(createUnspentTransactionOutputs(transaction)), []);
+    // Gather all inputs on this block, so we can use them to unvalidate older outputs
     const allInputsOnThisBlock = block.data.reduce<TransactionInput[]>((acc, transaction) => acc.concat(transaction.inputs), []);
-    const remainingUnspentTransactions: UnspentTransactionOutput[] = unspentTransactions.filter(unspentTransaction => {
+    // Invalidate outputs based on these new inputs
+    const remainingUnspentTransactions: UnspentTransactionOutput[] = [...unspentTransactions, ...newUnspentOutputs].filter(unspentTransaction => {
       // Remove unspenttransaction if the current block references it as an input
       if (allInputsOnThisBlock.find(input => input.transactionId === unspentTransaction.transactionId && input.transactionOutputIndex === unspentTransaction.index)) {
         return false;
       }
       return true;
     });
-    return [...remainingUnspentTransactions, ...newUnspentOutputs];
+    return remainingUnspentTransactions
   }, []);
 }
 
 /**
  * Get all unspent transactions of a single user
  */
-export function unspentTransactionsOfAddress(chain: Chain<Transaction[]>, address: string): UnspentTransactionOutput[] {
-  const allUnspentTransactions = calculateUnspentOutputs(chain);
+export function unspentTransactionsOfAddress(chain: Chain<Transaction[]>, unconfirmedTransactions: Transaction[], address: string): UnspentTransactionOutput[] {
+  const allUnspentTransactions = calculateUnspentOutputs(chain, unconfirmedTransactions);
   return allUnspentTransactions.filter(transaction => transaction.address === address);
 }
 
 /**
  * Get remaining coins of a single user
  */
-export function balanceOfAddress(chain: Chain<Transaction[]>, address: string): number {
-  const unspentTransactions = unspentTransactionsOfAddress(chain, address);
+export function balanceOfAddress(chain: Chain<Transaction[]>, unconfirmedTransactions: Transaction[], address: string): number {
+  const unspentTransactions = unspentTransactionsOfAddress(chain, unconfirmedTransactions, address);
   return unspentTransactions.reduce((acc, transaction) => acc + transaction.amount, 0);
 }
 
