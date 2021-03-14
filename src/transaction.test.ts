@@ -1,4 +1,4 @@
-import { balanceOfAddress, createCoinbaseTransaction, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, validateCoinbaseTransaction, validateTransaction } from "./transaction"
+import { balanceOfAddress, createCoinbaseTransaction, createOutputs, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, validateCoinbaseTransaction, validateTransaction } from "./transaction"
 import { generateKeys } from "./wallet"
 import { createBlock, validateChain } from "./block";
 import { GENESIS_BLOCK } from "./db";
@@ -139,4 +139,21 @@ describe('transaction', () => {
       // expect(balanceOfAddress(blockChain, unconfirmed, brucePublic)).toBe(5);
     })
   })
+  describe('createOutputs', () => {
+    it('should create proper outputs', () => {
+      expect(createOutputs(alicePublic, brucePublic, 20, 5)).toEqual([{
+        address: brucePublic,
+        amount: 20
+      }, {
+        address: alicePublic,
+        amount: 5
+      }]);
+    })
+    it('should not create an output for 0 amount', () => {
+      expect(createOutputs(alicePublic, brucePublic, 20, 0)).toEqual([{
+        address: brucePublic,
+        amount: 20
+      }])
+    })
+  });
 })

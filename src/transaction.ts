@@ -283,11 +283,18 @@ export function createUnsignedInputFromUnspentOutput(output: UnspentTransactionO
  * Helper for creating a one way transaction output
  */
 export function createOutputs(myPublicKey: string, receiverPublicKey: string, amount: number, leftoverAmount: number): TransactionOutput[] {
+  if (leftoverAmount > 0) {
+    return [{
+      address: receiverPublicKey,
+      amount
+    }, {
+      address: myPublicKey,
+      amount: leftoverAmount
+    }];
+  }
+
   return [{
     address: receiverPublicKey,
     amount
-  }, {
-    address: myPublicKey,
-    amount: leftoverAmount
-  }]
+  }];
 }
