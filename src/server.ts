@@ -73,6 +73,13 @@ receiver.app.use('/authenticated', function (req, res, next) {
 
 receiver.app.post('/authenticated/send-coins', function (req, res, next) {
   const { target, amount } = req.body;
+  if (target === req.wallet.publicKey) {
+    return next(new Error('Can\'t send coins to yourself'));
+  }
+
+  if (amount === 0) {
+    return next(new Error('Can\'t send 0 coins'));
+  }
   createTransaction(req.wallet.publicKey, target, amount)
     .then(transaction => {
       console.log(req.wallet.secretKey);
