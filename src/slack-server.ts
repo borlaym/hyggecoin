@@ -92,24 +92,65 @@ slackApp.event('app_home_opened', async ({ event, client, context }) => {
   }
 });
 
-slackApp.event('reaction_added', async ({ event }) => {
-  if (event.reaction === 'coin' || event.reaction === 'moneybag') {
+slackApp.event('reaction_added', async ({ event, client }) => {
+  console.log(event)
+  if (event.reaction === 'coin' || event.reaction === 'moneybag' || event.reaction === 'money_with_wings') {
     const sender = event.user;
     const receiver = event.item_user;
     const senderWallet = getSlackWallet(sender);
     const receiverWallet = getSlackWallet(receiver);
-    const amount = event.reaction === 'coin' ? 1 : 5;
+    const channel = event.item.type === 'message' ? event.item.channel : null;
+    const amount = (() => {
+      switch (event.reaction) {
+        case 'coin': return 1;
+        case 'moneybag': return 5;
+        case 'money_with_wings': return 1000;
+        default: return 0;
+      }
+    })()
     createTransaction(senderWallet.publicKey, receiverWallet.publicKey, amount)
     .then(transaction => {
       const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
       console.log(signedTransaction);
       addTransaction(signedTransaction)
       .then(() => {
-        console.log('success')
+        if (channel) {
+          client.apiCall('users.info', {
+            user: receiver
+          }).then(res => {
+            const username = (res.user as any).name;
+            client.apiCall('chat.postEphemeral', {
+              channel,
+              user: sender,
+              attachments: [],
+              icon_emoji: `:${event.reaction}:`,
+              link_names: true,
+              text: `Successfully sent ${amount} coins to @${username}.`
+            }).catch(err => console.error(err))
+          }).catch(err => console.error(err));
+        }
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err)
+        client.apiCall('chat.postEphemeral', {
+          channel,
+          user: sender,
+          attachments: [],
+          icon_emoji: `:warning:`,
+          text: `Unable to send coins: ${err}. Please kindly remove the emoji, don\'t hack the system, thank you.`
+        }).catch(err => console.error(err))
+      });
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+      console.error(err)
+        client.apiCall('chat.postEphemeral', {
+          channel,
+          user: sender,
+          attachments: [],
+          icon_emoji: `:warning:`,
+          text: `Unable to send coins: ${err}. Please kindly remove the emoji, don\'t hack the system, thank you.`
+        }).catch(err => console.error(err))
+    });
   }
 });
 
