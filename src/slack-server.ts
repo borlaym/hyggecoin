@@ -111,10 +111,10 @@ slackApp.event('reaction_added', async ({ event, client }) => {
     createTransaction(senderWallet.publicKey, receiverWallet.publicKey, amount)
     .then(transaction => {
       const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
-      console.log(signedTransaction);
       addTransaction(signedTransaction)
       .then(() => {
         if (channel) {
+          // Notify sender
           client.apiCall('users.info', {
             user: receiver
           }).then(res => {
@@ -128,6 +128,26 @@ slackApp.event('reaction_added', async ({ event, client }) => {
               text: `Successfully sent ${amount} coins to @${username}.`
             }).catch(err => console.error(err))
           }).catch(err => console.error(err));
+          // Notify receiver
+          Promise.all([
+            client.apiCall('users.conversations', {
+              types: 'im',
+              user: receiver
+            }),
+            client.apiCall('users.info', {
+              user: sender
+            })
+          ])
+          .then(([conversations, senderInfo]) => {
+            if (conversations.channels && (conversations.channels as any).length > 0) {
+              client.apiCall('chat.postMessage', {
+                channel: (conversations.channels as any)[0].id,
+                icon_emoji: `:${event.reaction}:`,
+                link_names: true,
+                text: `Received ${amount} coins from  @${(senderInfo.user as any).name}!`
+              }).catch(err => console.error(err))
+            }
+          })
         }
       })
       .catch(err => {
