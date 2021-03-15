@@ -44,6 +44,12 @@ export type UnspentTransactionOutput = {
 }
 
 export type TransactionInput = {
+
+  /**
+   * The sender must sign this input with their private key
+   * Q: why is not the whole transaction signed instead of the individual inputs, since we use the transaction id as the content for the signature anyway?
+   */
+  signature: string;
   /**
    * The id of the transaction that holds the unspent output this input is referencing.
    */
@@ -52,11 +58,6 @@ export type TransactionInput = {
    * Since one transaction can have a number of outputs, we need to know the index of the output inside that transaction this input is referencing
    */
   transactionOutputIndex: number;
-  /**
-   * The sender must sign this input with their private key
-   * Q: why is not the whole transaction signed instead of the individual inputs, since we use the transaction id as the content for the signature anyway?
-   */
-  signature: string;
 }
 
 export type Transaction = {
@@ -130,9 +131,9 @@ export function createTransaction(inputs: TransactionInput[], outputs: Transacti
  */
 export function createCoinbaseTransaction(blockHeight: number, publicKey: string, secretKey: string): Transaction {
   return createTransaction([{
+    signature: '',
     transactionId: '',
-    transactionOutputIndex: blockHeight,
-    signature: ''
+    transactionOutputIndex: blockHeight
   }], [{
     address: publicKey,
     amount: REWARD_AMOUNT
@@ -279,9 +280,9 @@ export function balanceOfAddress(chain: Chain<Transaction[]>, unconfirmedTransac
  */
 export function createUnsignedInputFromUnspentOutput(output: UnspentTransactionOutput): TransactionInput {
   return {
+    signature: '',
     transactionId: output.transactionId,
     transactionOutputIndex: output.index,
-    signature: ''
   };
 }
 

@@ -60,6 +60,7 @@ receiver.app.post('/authenticate', function (req, res) {
 });
 
 receiver.app.post('/mine-block', async function (req, res, next) {
+  console.log('Received new block', req.body);
   try {
     await addBlock(req.body);
     res.send({ data: 'success' });
@@ -105,6 +106,8 @@ receiver.app.post('/authenticated/send-coins', function (req, res, next) {
 })
 
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  console.log(err);
+  res.status(400);
   res.send({
     data: null,
     error: err.message

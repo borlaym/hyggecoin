@@ -15,30 +15,10 @@ export const GENESIS_BLOCK: Block<Transaction[]> = {
   nonce: 1
 };
 
-const SAMPLE_BLOCK: Block<Transaction[]> = {
-  timestamp: 1615551940605,
-  data: [{
-    id: "83a37ab1d86fccc378defc942f88db58ae97346f73109f3f2cf295fcbf4eff73",
-    inputs: [
-      {
-        transactionId: "",
-        transactionOutputIndex: 1,
-        signature: "304502203673496137c5bccca1cd9499fffc656f22385ec33a9a3a79a6cb4e19f7223caf022100dcf49566d6e61bedf0796a40371a136d433f35041e9fcbf1b10a683117594eaf"
-        }
-    ],
-    outputs: [{
-      address: "04b77787ca1df318e2e515252a4cfa643883934188ad390380108559e050867f99cf5f4a2c63251a337563bb916796c60f7a7705b7d9b05442e1c04bfd00cc918a",
-      amount: 50
-    }]
-  }],
-  previousHash: "71ce399acfbec8338142fe71828dbadd901cbc96c907d67ea61110dc08b272ae",
-  hash: "0044f35f662ef2fdb14ed1c5661ca873b6c1db0a1d60f11cd0c3360cfc5d094f",
-  nonce: 751
-};
-
 export function getBlocks(): Promise<Chain<Transaction[]>> {
   return chainRef.get().then(snapshot => {
     const data: { [key: string]: Block<Transaction[]> } = snapshot.val() || {};
+    // Firebase stores blocks as key value pairs
     const blocks = Object.values(data) || [];
     return [GENESIS_BLOCK, ...blocks];
   })
