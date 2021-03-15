@@ -4,6 +4,7 @@
   "main": "dist/server.js",
   "license": "MIT",
   "scripts": {
+    "build": "tsc",
     "build-ts": "tsc",
     "start": "npm run serve",
     "serve": "tsc && node dist/server.js",
