@@ -37,7 +37,11 @@ const SAMPLE_BLOCK: Block<Transaction[]> = {
 };
 
 export function getBlocks(): Promise<Chain<Transaction[]>> {
-  return chainRef.get().then(snapshot => [GENESIS_BLOCK, ...snapshot.val()?.data || []])
+  return chainRef.get().then(snapshot => {
+    const data: { [key: string]: Block<Transaction[]> } = snapshot.val() || {};
+    const blocks = Object.values(data) || [];
+    return [GENESIS_BLOCK, ...blocks];
+  })
 }
 
 export function getBlockByHash(hash: string): Promise<Block<Transaction[]> | null> {
@@ -49,7 +53,10 @@ export function getLastBlock(): Promise<Block<Transaction[]> | null> {
 }
 
 export function getUnconfirmedTransactions(): Promise<Transaction[]> {
-  return transactionsRef.get().then(snapshot => snapshot.val()?.data || []);
+  return transactionsRef.get().then(snapshot => {
+    const data: { [key: string]: Transaction } = snapshot.val() || {};
+    return Object.values(data) || [];
+  })
 }
 
 export function addTransaction(transaction: Transaction): Promise<Transaction> {
