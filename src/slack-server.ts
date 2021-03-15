@@ -67,6 +67,25 @@ slackApp.event('app_home_opened', async ({ event, client, context }) => {
               "emoji": true
             }
           },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "section",
+            "text": {
+              "type": "plain_text",
+              "text": `Your hyggecoin address: ${wallet.publicKey}`,
+              "emoji": true
+            }
+          },
+          {
+            "type": "section",
+            "text": {
+              "type": "plain_text",
+              "text": `Your secret key: ${wallet.secretKey}`,
+              "emoji": true
+            }
+          },
         ]
       }
     });
