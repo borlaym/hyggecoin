@@ -1,7 +1,11 @@
 // Fake a db until everything is ready. I don't want to reset the db every time I change something
 
 import { Block, Chain, createBlock, validateChain } from "./block";
+import firebase from "./firebase";
 import { calculateUnspentOutputs, createOutputs, createUnsignedInputFromUnspentOutput, Transaction, TransactionInput, TransactionOutput, UnspentTransactionOutput, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction";
+
+const chainRef = firebase.ref('/chain');
+const transactionsRef = firebase.ref('/transactions');
 
 export const GENESIS_BLOCK: Block<Transaction[]> = {
   previousHash: '0',
@@ -32,78 +36,73 @@ const SAMPLE_BLOCK: Block<Transaction[]> = {
   nonce: 751
 };
 
-/**
- * This is the blockchain itself, persisting between request but not between restarts
- */
-let currentChain: Chain<Transaction[]> = [GENESIS_BLOCK, SAMPLE_BLOCK];
-
-/**
- * Transactions that have been initiated, validated, but have yet to be mined and attached to a block
- */
-let unconfirmedTransactions: Transaction[] = [];
-
-export async function getBlocks(): Promise<Chain<Transaction[]>> {
-  return currentChain;
+export function getBlocks(): Promise<Chain<Transaction[]>> {
+  return chainRef.get().then(snapshot => [GENESIS_BLOCK, ...snapshot.val()?.data || []])
 }
 
-export async function getBlockByHash(hash: string): Promise<Block<Transaction[]> | null> {
-  return currentChain.find(block => block.hash === hash);
+export function getBlockByHash(hash: string): Promise<Block<Transaction[]> | null> {
+  return getBlocks().then(chain => chain.find(block => block.hash === hash))
 }
 
-export async function getLastBlock(): Promise<Block<Transaction[]> | null> {
-  return currentChain[currentChain.length - 1];
+export function getLastBlock(): Promise<Block<Transaction[]> | null> {
+  return getBlocks().then(chain => chain[chain.length - 1]);
 }
 
-export async function addTransaction(transaction: Transaction): Promise<boolean> {
-  if (validateTransaction(transaction, calculateUnspentOutputs(currentChain, unconfirmedTransactions), unconfirmedTransactions)) {
-    unconfirmedTransactions = [...unconfirmedTransactions, transaction];
-    return true;
-  }
-  throw new Error('Unable to add transaction, invalid transaction');
+export function getUnconfirmedTransactions(): Promise<Transaction[]> {
+  return transactionsRef.get().then(snapshot => snapshot.val()?.data || []);
 }
 
-export async function getUnconfirmedTransactions(): Promise<Transaction[]> {
-  return unconfirmedTransactions;
+export function addTransaction(transaction: Transaction): Promise<Transaction> {
+  return Promise.all([
+    getBlocks(),
+    getUnconfirmedTransactions()
+  ]).then(([chain, unconfirmedTransactions]) => {
+    if (validateTransaction(transaction, calculateUnspentOutputs(chain, unconfirmedTransactions), unconfirmedTransactions)) {
+      return transactionsRef.push(transaction).then(() => transaction);
+    }
+    throw new Error('Unable to add transaction, invalid transaction');
+  })
 }
 
-export async function addBlock(block: Block<Transaction[]>): Promise<boolean> {
-  if (!validateCoinbaseTransaction(block.data[0], currentChain.length)) {
-    throw new Error('Invalid coinbase transaction');
-  }
-  if (!validateChain([...currentChain, block])) {
-    throw new Error('Invalid chain');
-  }
-
-  // Update chain with new block
-  currentChain = [...currentChain, block];
-
-  // Remove transactions from unconfirmedTransactions
-  unconfirmedTransactions = unconfirmedTransactions.filter(unconfirmedTransaction => !block.data.find(transactionOnBlock => transactionOnBlock.id === unconfirmedTransaction.id));
-
-  return true;
+export function addBlock(block: Block<Transaction[]>): Promise<boolean> {
+  return Promise.all([
+    getBlocks(),
+    getUnconfirmedTransactions()
+  ]).then(([chain, unconfirmedTransactions]) => {
+    if (!validateCoinbaseTransaction(block.data[0], chain.length)) {
+      throw new Error('Invalid coinbase transaction');
+    }
+    if (!validateChain([...chain, block])) {
+      throw new Error('Invalid chain');
+    }
+    const remainingUnconfirmedTransactions = unconfirmedTransactions.filter(unconfirmedTransaction => !block.data.find(transactionOnBlock => transactionOnBlock.id === unconfirmedTransaction.id));
+    // Update chain with new block and remove mined transactions from unconfirmed
+    return Promise.all([
+      chainRef.push(block),
+      transactionsRef.set(remainingUnconfirmedTransactions)
+    ]).then(() => true)
+  });
 }
 
 export async function getCoinsInCirculation(): Promise<number> {
-  return calculateUnspentOutputs(currentChain, unconfirmedTransactions).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+  return Promise.all([
+    getBlocks(),
+    getUnconfirmedTransactions()
+  ]).then(([chain, unconfirmedTransactions]) => {
+    return calculateUnspentOutputs(chain, unconfirmedTransactions).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+  })
 }
 
 export async function getBalance(publicKey: string): Promise<number> {
-  return calculateUnspentOutputs(currentChain, unconfirmedTransactions).filter(output => output.address === publicKey).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+  return Promise.all([
+    getBlocks(),
+    getUnconfirmedTransactions()
+  ]).then(([chain, unconfirmedTransactions]) => {
+    return calculateUnspentOutputs(chain, unconfirmedTransactions).filter(output => output.address === publicKey).reduce((acc, unspentOutput) => acc + unspentOutput.amount, 0);
+  });
 }
 
-export async function getBalanceWithUnverified(publicKey: string): Promise<{ verified: number, unverified: number }> {
-  const verified = await getBalance(publicKey);
-  const unconfirmedTransactions = await getUnconfirmedTransactions();
-  const chain = await getBlocks();
-  const unspentOutputsWithUnverified = calculateUnspentOutputs(chain, unconfirmedTransactions);
-
-  return {
-    verified,
-    unverified: unspentOutputsWithUnverified.filter(output => output.address === publicKey).reduce((acc, output) => acc + output.amount, 0) - verified
-  }
-}
-
-export async function findUnspentOutputsForAmount(myUnspentTransactionOutputs: UnspentTransactionOutput[], requestedAmount: number): Promise<{ includedOutputs: UnspentTransactionOutput[], leftoverAmount: number }> {
+export function findUnspentOutputsForAmount(myUnspentTransactionOutputs: UnspentTransactionOutput[], requestedAmount: number): { includedOutputs: UnspentTransactionOutput[], leftoverAmount: number } {
   let currentAmount = 0;
   const includedOutputs = [];
   for (let i = 0; i < myUnspentTransactionOutputs.length; i++) {
@@ -120,11 +119,16 @@ export async function findUnspentOutputsForAmount(myUnspentTransactionOutputs: U
 }
 
 export async function createTransaction(myPublicKey: string, targetPublicKey: string, amount: number): Promise<Transaction> {
-  const myUnspentTransactionOutputs = unspentTransactionsOfAddress(currentChain, unconfirmedTransactions, myPublicKey);
-  const { includedOutputs, leftoverAmount } = await findUnspentOutputsForAmount(myUnspentTransactionOutputs, amount);
-  return {
-    id: '',
-    inputs: includedOutputs.map(output => createUnsignedInputFromUnspentOutput(output)),
-    outputs: createOutputs(myPublicKey, targetPublicKey, amount, leftoverAmount)
-  }
+  return Promise.all([
+    getBlocks(),
+    getUnconfirmedTransactions()
+  ]).then(([chain, unconfirmedTransactions]) => {
+    const myUnspentTransactionOutputs = unspentTransactionsOfAddress(chain, unconfirmedTransactions, myPublicKey);
+    const { includedOutputs, leftoverAmount } = findUnspentOutputsForAmount(myUnspentTransactionOutputs, amount);
+    return {
+      id: '',
+      inputs: includedOutputs.map(output => createUnsignedInputFromUnspentOutput(output)),
+      outputs: createOutputs(myPublicKey, targetPublicKey, amount, leftoverAmount)
+    }
+  });
 }

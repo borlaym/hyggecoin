@@ -1,7 +1,7 @@
 import { App, UsersSelectAction, ExpressReceiver } from '@slack/bolt';
-import { addTransaction, createTransaction, getBalance, getBalanceWithUnverified, getBlocks, getLastBlock } from './db';
+import { addTransaction, createTransaction, getBalance, getLastBlock } from './db';
 import { signTransaction } from './transaction';
-import { createWallet, getSlackWallet } from './wallet';
+import { getSlackWallet } from './wallet';
 
 const receiver = new ExpressReceiver({ signingSecret: process.env.SLACK_APP_SIGNING_SECRET });
 
@@ -21,7 +21,7 @@ const slackApp = new App({
 slackApp.event('app_home_opened', async ({ event, client, context }) => {
   const userId = event.user;
   let wallet = getSlackWallet(userId);
-  const myBalance = await getBalanceWithUnverified(wallet.publicKey);
+  const myBalance = await getBalance(wallet.publicKey);
 
   try {
     /* view.publish is the method that your app uses to push a view to the Home tab */
@@ -63,7 +63,7 @@ slackApp.event('app_home_opened', async ({ event, client, context }) => {
             "type": "section",
             "text": {
               "type": "plain_text",
-              "text": `Your wallet balance: ${myBalance.verified}${myBalance.unverified !== 0 ? ` (${myBalance.unverified > 0 ? '+' : ''}${myBalance.unverified} unverified)` : ''}`,
+              "text": `Your wallet balance: ${myBalance}`,
               "emoji": true
             }
           },

@@ -18,18 +18,26 @@ receiver.app.use('*', (req, res, next) => {
 
 receiver.app.get('/', (req, res) => res.send('Hyggecoin Exchange'));
 
-receiver.app.get('/chain', async (req, res) => {
-  const chain = await getBlocks();
-  res.send({
-    data: chain
-  });
+receiver.app.get('/chain', async (req, res, next) => {
+  try {
+    const chain = await getBlocks();
+    res.send({
+      data: chain
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-receiver.app.get('/unconfirmed-transactions', async (req, res) => {
-  const transactions = await getUnconfirmedTransactions();
-  res.send({
-    data: transactions
-  });
+receiver.app.get('/unconfirmed-transactions', async (req, res, next) => {
+  try {
+    const transactions = await getUnconfirmedTransactions();
+    res.send({
+      data: transactions
+    });
+  } catch (err) {
+    next(err)
+  }
 })
 
 receiver.app.post('/create-wallet', function(req, res, next) {
@@ -51,11 +59,12 @@ receiver.app.post('/authenticate', function (req, res) {
   }
 });
 
-receiver.app.post('/mine-block', function (req, res) {
-  if (addBlock(req.body)) {
+receiver.app.post('/mine-block', async function (req, res, next) {
+  try {
+    await addBlock(req.body);
     res.send({ data: 'success' });
-  } else {
-    res.send({ error: 'something went wrong '});
+  } catch (err) {
+    next(err);
   }
 })
 
@@ -82,7 +91,6 @@ receiver.app.post('/authenticated/send-coins', function (req, res, next) {
   }
   createTransaction(req.wallet.publicKey, target, amount)
     .then(transaction => {
-      console.log(req.wallet.secretKey);
       const signedTransaction = signTransaction(transaction, req.wallet.secretKey);
       addTransaction(signedTransaction)
       .then(() => {
