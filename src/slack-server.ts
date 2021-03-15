@@ -67,22 +67,6 @@ slackApp.event('app_home_opened', async ({ event, client, context }) => {
               "emoji": true
             }
           },
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "Send 5 coins to"
-            },
-            "accessory": {
-              "type": "users_select",
-              "placeholder": {
-                "type": "plain_text",
-                "text": "Select conversations",
-                "emoji": true
-              },
-              "action_id": "send5coins"
-            }
-          },
         ]
       }
     });
@@ -144,7 +128,7 @@ slackApp.event('reaction_added', async ({ event, client }) => {
                 channel: (conversations.channels as any)[0].id,
                 icon_emoji: `:${event.reaction}:`,
                 link_names: true,
-                text: `Received ${amount} coins from  @${(senderInfo.user as any).name}!`
+                text: `Received ${amount} coins from @${(senderInfo.user as any).name}!`
               }).catch(err => console.error(err))
             }
           })
@@ -174,24 +158,61 @@ slackApp.event('reaction_added', async ({ event, client }) => {
   }
 });
 
-slackApp.action('send5coins', async ({ payload, ack, body }) => {
-  const sender = body.user.id;
-  const receiver = (payload as UsersSelectAction).selected_user;
-  const senderWallet = getSlackWallet(sender);
-  const receiverWallet = getSlackWallet(receiver);
-  createTransaction(senderWallet.publicKey, receiverWallet.publicKey, 5)
-    .then(transaction => {
-      const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
-      console.log(signedTransaction);
-      addTransaction(signedTransaction)
-      .then(() => {
-        console.log('success')
-        ack();
+slackApp.command('/hyggecoin', async ({ command, ack, client, respond }) => {
+  const sender = command.user_id;
+  const [receiverHandle, amount] = command.text.split(' ');
+  ack();
+  if (!receiverHandle || !amount) {
+    respond({
+      text: 'Not valid syntax for command',
+      response_type: 'ephemeral'
+    });
+    return;
+  }
+  client.apiCall('users.list').then(res => {
+    const receiverUser = (res.members as any).find((member: any) => member.name === receiverHandle.replace('@', ''));
+    if (!receiverUser) {
+      respond({
+        text: 'Can\'t find user',
+        response_type: 'ephemeral'
+      });
+      return;
+    }
+    const senderWallet = getSlackWallet(sender);
+    const receiverWallet = getSlackWallet(receiverUser.id);
+    createTransaction(senderWallet.publicKey, receiverWallet.publicKey, Number(amount))
+      .then(transaction => {
+        const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
+        addTransaction(signedTransaction)
+        .then(() => {
+            // Notify sender
+            respond({
+              text: `Successfully sent ${amount} coins to ${receiverUser.real_name}!`,
+              response_type: 'ephemeral'
+            });
+            // Notify receiver
+            Promise.all([
+              client.apiCall('users.conversations', {
+                types: 'im',
+                user: receiverUser.id
+              }),
+              client.apiCall('users.info', {
+                user: sender
+              })
+            ])
+            .then(([conversations, senderInfo]) => {
+              if (conversations.channels && (conversations.channels as any).length > 0) {
+                client.apiCall('chat.postMessage', {
+                  channel: (conversations.channels as any)[0].id,
+                  link_names: true,
+                  text: `Received ${amount} coins from ${(senderInfo.user as any).real_name}!`
+                }).catch(err => console.error(err))
+              }
+            })
+        })
       })
-      .catch(err => ack(err));
-    })
-    .catch(err => ack(err));
-})
+  });
+});
 
 export default slackApp;
 export { receiver };
