@@ -92,7 +92,28 @@ slackApp.event('app_home_opened', async ({ event, client, context }) => {
   }
 });
 
-slackApp.action('send5coins', async ({ payload, ack, body, ...others }) => {
+slackApp.event('reaction_added', async ({ event }) => {
+  if (event.reaction === 'coin' || event.reaction === 'moneybag') {
+    const sender = event.user;
+    const receiver = event.item_user;
+    const senderWallet = getSlackWallet(sender);
+    const receiverWallet = getSlackWallet(receiver);
+    const amount = event.reaction === 'coin' ? 1 : 5;
+    createTransaction(senderWallet.publicKey, receiverWallet.publicKey, amount)
+    .then(transaction => {
+      const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
+      console.log(signedTransaction);
+      addTransaction(signedTransaction)
+      .then(() => {
+        console.log('success')
+      })
+      .catch(err => console.error(err));
+    })
+    .catch(err => console.error(err));
+  }
+});
+
+slackApp.action('send5coins', async ({ payload, ack, body }) => {
   const sender = body.user.id;
   const receiver = (payload as UsersSelectAction).selected_user;
   const senderWallet = getSlackWallet(sender);
