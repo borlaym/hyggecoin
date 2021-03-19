@@ -97,7 +97,7 @@ slackApp.event('app_home_opened', async ({ event, client, context }) => {
 
 slackApp.event('reaction_added', async ({ event, client }) => {
   console.log(event)
-  if (event.reaction === 'coin' || event.reaction === 'moneybag' || event.reaction === 'money_with_wings') {
+  if (event.reaction === 'hyggecoin-bronze' || event.reaction === 'hyggecoin-silver' || event.reaction === 'hyggecoin-gold') {
     const sender = event.user;
     const receiver = event.item_user;
     const senderWallet = await ensureSlackWallet(sender);
@@ -105,9 +105,9 @@ slackApp.event('reaction_added', async ({ event, client }) => {
     const channel = event.item.type === 'message' ? event.item.channel : null;
     const amount = (() => {
       switch (event.reaction) {
-        case 'coin': return 1;
-        case 'moneybag': return 5;
-        case 'money_with_wings': return 1000;
+        case 'hyggecoin-bronze': return 1;
+        case 'hyggecoin-silver': return 5;
+        case 'hyggecoin-gold': return 10;
         default: return 0;
       }
     })()
