@@ -1,4 +1,4 @@
-import express, { ErrorRequestHandler } from 'express';
+import { ErrorRequestHandler } from 'express';
 import { authenticate, createWallet, getToken } from './wallet';
 import bodyParser from 'body-parser';
 import { addBlock, addTransaction, createTransaction, getBlocks, getUnconfirmedTransactions } from './db';

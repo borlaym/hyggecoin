@@ -1,9 +1,10 @@
+import firebase from "./firebase";
 import { getHash } from "./util";
 
 const EC = require('elliptic').ec;
 const crypto = require('crypto');
 
-const SALT = '&)(*&#$&*oh my god what a salt this is,;[]0=-0-=0_+;``';
+const SALT = process.env.SALT;
 
 export type Wallet = {
   publicKey: string;
