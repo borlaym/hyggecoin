@@ -84,8 +84,8 @@ export function createWallet({ name, password, slackId } : { name?: string, pass
   const newWallet: Wallet = {
     publicKey,
     secretKey,
-    name,
-    passwordHash: getHash(name + password + SALT),
+    name: name || slackId,
+    passwordHash: getHash(name + (password || slackId) + SALT),
     tokens: [],
     slackId
   };
