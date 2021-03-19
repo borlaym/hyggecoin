@@ -1,7 +1,7 @@
 import { App, UsersSelectAction, ExpressReceiver } from '@slack/bolt';
 import { addTransaction, createTransaction, getBalance, getLastBlock } from './db';
 import { signTransaction } from './transaction';
-import { getSlackWallet } from './wallet';
+import { ensureSlackWallet, getSlackWallet } from './wallet';
 
 const receiver = new ExpressReceiver({ signingSecret: process.env.SLACK_APP_SIGNING_SECRET });
 
@@ -20,7 +20,7 @@ const slackApp = new App({
 
 slackApp.event('app_home_opened', async ({ event, client, context }) => {
   const userId = event.user;
-  let wallet = getSlackWallet(userId);
+  let wallet = await ensureSlackWallet(userId);
   const myBalance = await getBalance(wallet.publicKey);
 
   try {
@@ -100,8 +100,8 @@ slackApp.event('reaction_added', async ({ event, client }) => {
   if (event.reaction === 'coin' || event.reaction === 'moneybag' || event.reaction === 'money_with_wings') {
     const sender = event.user;
     const receiver = event.item_user;
-    const senderWallet = getSlackWallet(sender);
-    const receiverWallet = getSlackWallet(receiver);
+    const senderWallet = await ensureSlackWallet(sender);
+    const receiverWallet = await ensureSlackWallet(receiver);
     const channel = event.item.type === 'message' ? event.item.channel : null;
     const amount = (() => {
       switch (event.reaction) {
@@ -188,7 +188,7 @@ slackApp.command('/hyggecoin', async ({ command, ack, client, respond }) => {
     });
     return;
   }
-  client.apiCall('users.list').then(res => {
+  client.apiCall('users.list').then(async (res) => {
     const receiverUser = (res.members as any).find((member: any) => member.name === receiverHandle.replace('@', ''));
     if (!receiverUser) {
       respond({
@@ -197,8 +197,8 @@ slackApp.command('/hyggecoin', async ({ command, ack, client, respond }) => {
       });
       return;
     }
-    const senderWallet = getSlackWallet(sender);
-    const receiverWallet = getSlackWallet(receiverUser.id);
+    const senderWallet = await ensureSlackWallet(sender);
+    const receiverWallet = await ensureSlackWallet(receiverUser.id);
     createTransaction(senderWallet.publicKey, receiverWallet.publicKey, Number(amount))
       .then(transaction => {
         const signedTransaction = signTransaction(transaction, senderWallet.secretKey);

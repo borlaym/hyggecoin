@@ -42,21 +42,23 @@ receiver.app.get('/unconfirmed-transactions', async (req, res, next) => {
 
 receiver.app.post('/create-wallet', function(req, res, next) {
   const { name, password } = req.body;
-  const newWallet = createWallet({ name, password });
-  res.json({
-    name,
-    publicKey: newWallet.publicKey
+  createWallet({ name, password }).then(newWallet => {
+    res.json({
+      name,
+      publicKey: newWallet.publicKey
+    });
   });
 });
 
 receiver.app.post('/authenticate', function (req, res) {
   const { name, password } = req.body;
-  const token = getToken(name, password);
-  if (token) {
-    res.json({ token });
-  } else {
-    res.json({ error: 'Invalid username or password' })
-  }
+  getToken(name, password).then(token => {
+    if (token) {
+      res.json({ token });
+    } else {
+      res.json({ error: 'Invalid username or password' })
+    }
+  });
 });
 
 receiver.app.post('/mine-block', async function (req, res, next) {
@@ -72,13 +74,14 @@ receiver.app.post('/mine-block', async function (req, res, next) {
 receiver.app.use('/authenticated', function (req, res, next) {
   const authorizationHeader = req.headers['authorization'];
   const token = authorizationHeader?.replace('Bearer ', '');
-  const wallet = authenticate(token);
-  if (wallet) {
-    req.wallet = wallet;
-    return next();
-  }
-  console.error('Unauthorized');
-  return next(new Error('Unauthorized'));
+  authenticate(token).then(wallet => {
+    if (wallet) {
+      req.wallet = wallet;
+      return next();
+    }
+    console.error('Unauthorized');
+    return next(new Error('Unauthorized'));
+  });
 });
 
 receiver.app.post('/authenticated/send-coins', function (req, res, next) {

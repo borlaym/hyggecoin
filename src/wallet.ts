@@ -4,36 +4,69 @@ import { getHash } from "./util";
 const EC = require('elliptic').ec;
 const crypto = require('crypto');
 
+/**
+ * Salt is appended to the end of passwords before a hash is calculated
+ */
 const SALT = process.env.SALT;
 
+const walletRef = firebase.ref('/wallets');
+
+/**
+ * A wallet is for making it easier for users to manage transactions for a given public address
+ */
 export type Wallet = {
+  /**
+   * Public part if the cryptographic keypair. This is the address where users can send coins, and used for validating transactions
+   */
   publicKey: string;
+  /**
+   * Private part of the cryptographic pair. Used for signing transactions
+   */
   secretKey: string;
+  /**
+   * An easy to remember name for the wallet
+   */
   name?: string;
+  /**
+   * Hash of the password string for logging into the wallet. Gets calculated as hash(name + password + salt)
+   */
   passwordHash?: string;
+  /**
+   * Tokens for quick access to the wallet, sent as Bearer tokens in Authorization headers
+   */
   tokens: string[];
+  /**
+   * Slack id of the user associated with the wallet
+   * When slack makes a POST request, a wallet can be selected based on this id
+   */
   slackId?: string;
 }
 
-let wallets: Wallet[] = [{
-  "publicKey": "04b77787ca1df318e2e515252a4cfa643883934188ad390380108559e050867f99cf5f4a2c63251a337563bb916796c60f7a7705b7d9b05442e1c04bfd00cc918a",
-  "secretKey": "869cd7bdcfc5fee6dc0ea48155115a33953dc55ebbbb282d5960443de89412b5",
-  "name": "alice",
-  "passwordHash": "2458fc44725895334c541414b3ddb78e142bf5dfae2d938b46acb1cf625f17a4", // password is test
-  "tokens": ['468233fbe015a8412b78b8f25d7a12c38287b3bca6d6d892438c141655ded1e0'],
-  "slackId": 'U010VGKE9RV'
-}, {
-  "publicKey": "0437a334c1dbabfd5f6f3b286d4c6f933bc54326310f6a2089e8f02a107313ca17228c46f746b9f75986b8a64fc4f8a69c003932cbb9bcf077a97886003401f185",
-  "secretKey": "6fb996031dd3d7047ff156afa72b7b9edcf81d6595ab95cb8032838a1afc304f",
-  "name": "bob",
-  "passwordHash": "0726babf905be6eae6f51dae63ca4742cee9394f559830230c317f901e22f549", // password is test
-  "tokens":['33721282c5617c05364bb499efbcc4446dd48918ebf2dab9ea7d3e496921b02f']}
-];
+/**
+ * Get all wallets from firebase with ids intact
+ */
+function getAllWalletsWithReferences(): Promise<{ [key: string]: Wallet }> {
+  return walletRef.get().then(snapshot => {
+    const data: { [key: string]: Wallet } = snapshot.val() || {};
+    return data;
+  });
+}
 
-export function generateKeys(password?: string): { secretKey: string; publicKey: string } {
+/**
+ * Fetch all wallets
+ */
+function getAllWallets(): Promise<Wallet[]> {
+  return getAllWalletsWithReferences().then(results => Object.values(results) || []);
+}
+
+/**
+ * Generate a random public / secret keypair.
+ * Optionally accepts a seed to deterministically generate a pair, but this should ONLY be used for unit testing!
+ */
+export function generateKeys(seed?: string): { secretKey: string; publicKey: string } {
   const ec = new EC('secp256k1');
-  const keyPair = ec.genKeyPair(password ? {
-    entropy: crypto.createHash('sha256').update(password).digest('hex')
+  const keyPair = ec.genKeyPair(seed ? {
+    entropy: crypto.createHash('sha256').update(seed).digest('hex')
   } : undefined);
   const secretKey = keyPair.getPrivate().toString(16);
   const publicKey = keyPair.getPublic().encode('hex')
@@ -43,7 +76,10 @@ export function generateKeys(password?: string): { secretKey: string; publicKey:
   };
 }
 
-export function createWallet({ name, password, slackId } : { name?: string, password?: string, slackId?: string }) {
+/**
+ * Creates a new, empty wallet
+ */
+export function createWallet({ name, password, slackId } : { name?: string, password?: string, slackId?: string }): Promise<Wallet> {
   const { publicKey, secretKey } = generateKeys();
   const newWallet: Wallet = {
     publicKey,
@@ -53,28 +89,54 @@ export function createWallet({ name, password, slackId } : { name?: string, pass
     tokens: [],
     slackId
   };
-  wallets = [...wallets, newWallet];
-  return newWallet;
+  return walletRef.push(newWallet).then(() => newWallet);
 }
 
-export function getToken(name: string, password: string): string | false {
-  const wallet = wallets.find(wallet => wallet.name === name);
-  if (wallet.passwordHash !== getHash(name + password + SALT)) {
-    return false;
-  }
-  const token = getHash(Date.now() + name + password);
-  wallets[wallets.indexOf(wallet)] = {
-    ...wallet,
-    tokens: [...wallet.tokens, token]
-  };
-  return token;
+/**
+ * Generate a reusable Bearer token from a username and password and attach it to the appropriate wallet
+ */
+export function getToken(name: string, password: string): Promise<string> {
+  return getAllWalletsWithReferences().then(wallets => {
+    const walletId = Object.keys(wallets).find(id => wallets[id].name === name);
+    const wallet = wallets[walletId];
+
+    if (!wallet) {
+      throw new Error('Invalid name or password');
+    }
+
+    if (wallet.passwordHash !== getHash(name + password + SALT)) {
+      throw new Error('Invalid name or password');
+    }
+
+    const token = getHash(Date.now() + name + password);
+    return firebase.ref(`/wallets/${walletId}/tokens`)
+      .update([...wallet.tokens, token])
+      .then(() => token);
+  });
+};
+
+/**
+ * Selects a wallet based on a Bearer token
+ */
+export function authenticate(token: string): Promise<Wallet | void> {
+  return getAllWallets().then(wallets => wallets.find(wallet => wallet.tokens.includes(token)));
 }
 
-export function authenticate(token: string): Wallet | undefined {
-  return wallets.find(wallet => wallet.tokens.includes(token));
+/**
+ * Selects a wallet based on a slack id
+ */
+export function getSlackWallet(slackId: string): Promise<Wallet | void> {
+  return getAllWallets().then(wallets => wallets.find(wallet => wallet.slackId === slackId));
 }
 
-export function getSlackWallet(id: string): Wallet | undefined {
-  const existingWallet = wallets.find(wallet => wallet.slackId === id);
-  return existingWallet || createWallet({ slackId: id });
+/**
+ * Get or create slack wallet
+ */
+export function ensureSlackWallet(slackId: string): Promise<Wallet> {
+  return getSlackWallet(slackId).then(exisitingWallet => {
+    if (exisitingWallet) {
+      return exisitingWallet;
+    }
+    return createWallet({ slackId });
+  })
 }
