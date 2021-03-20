@@ -1,7 +1,9 @@
-import { balanceOfAddress, createCoinbaseTransaction, createOutputs, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, validateCoinbaseTransaction, validateTransaction } from "./transaction"
+import { balanceOfAddress, createCoinbaseTransaction, createOutputs, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, validateCoinbaseTransaction, validateTransaction } from "./transaction"
 import { generateKeys } from "./wallet"
 import { createBlock, validateChain } from "./block";
 import { GENESIS_BLOCK } from "./db";
+
+jest.mock('./firebase', () => ({ ref: (): null => null }))
 
 /**
  * generate static keys that don't change from test to test
@@ -23,7 +25,7 @@ const BLOCK_2_ALICE_SENDS_TO_BRUCE = createTransaction([{
 }, {
   address: alicePublic,
   amount: 45
-}], aliceSecret);
+}], null, aliceSecret);
 
 const BLOCK_3_COINBASE_TRANSACTION = createCoinbaseTransaction(3, alicePublic, aliceSecret);
 
@@ -37,7 +39,7 @@ const BLOCK_3_ALICE_SENDS_TO_BRUCE = createTransaction([{
 }, {
   address: alicePublic,
   amount: 35
-}], aliceSecret);
+}], null, aliceSecret);
 
 const BLOCK_4_COINBASE_TRANSACTION = createCoinbaseTransaction(4, alicePublic, aliceSecret);
 
@@ -55,7 +57,7 @@ const BLOCK_4_BRUCE_SENDS_TO_ALICE = createTransaction([{
 }, {
   address: brucePublic,
   amount: 3
-}], bruceSecret);
+}], null, bruceSecret);
 
 // Test if it works correctly if the transaction references a transaction in the same block
 const BLOCK_4_ALICE_SENDS_SOME_BACK = createTransaction([{
@@ -68,7 +70,7 @@ const BLOCK_4_ALICE_SENDS_SOME_BACK = createTransaction([{
 }, {
   address: alicePublic,
   amount: 10
-}], bruceSecret);
+}], null, bruceSecret);
 
 const UNCONFIRMED_TRANSACTION = createTransaction([{
   transactionId: BLOCK_1_COINBASE_TRANSACTION.id,
@@ -77,7 +79,7 @@ const UNCONFIRMED_TRANSACTION = createTransaction([{
 }], [{
   address: brucePublic,
   amount: 50
-}], aliceSecret);
+}], null, aliceSecret);
 
 describe('transaction', () => {
   describe('validateCoinbaseTransaction', () => {
@@ -101,6 +103,17 @@ describe('transaction', () => {
       expect(() =>
         validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [UNCONFIRMED_TRANSACTION])
       ).toThrowError('Transaction references an output already used by another unconfirmed transaction')
+    })
+    it('transaction message should be included in hash', () => {
+      const transaction: Transaction = {
+        id: '',
+        inputs: [],
+        outputs: [],
+        message: null
+      };
+      const id = generateTransactionID({ ...transaction, message: 'This is a message'});
+      const id2 = generateTransactionID(transaction);
+      expect(id).not.toEqual(id2);
     })
   })
   describe('calculating unspent outputs', () => {

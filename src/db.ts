@@ -105,7 +105,7 @@ export function findUnspentOutputsForAmount(myUnspentTransactionOutputs: Unspent
   throw new Error('Requested more outputs than available coins');
 }
 
-export async function createTransaction(myPublicKey: string, targetPublicKey: string, amount: number): Promise<Transaction> {
+export async function createTransaction(myPublicKey: string, targetPublicKey: string, message: string | null, amount: number): Promise<Transaction> {
   return Promise.all([
     getBlocks(),
     getUnconfirmedTransactions()
@@ -115,7 +115,8 @@ export async function createTransaction(myPublicKey: string, targetPublicKey: st
     return {
       id: '',
       inputs: includedOutputs.map(output => createUnsignedInputFromUnspentOutput(output)),
-      outputs: createOutputs(myPublicKey, targetPublicKey, amount, leftoverAmount)
+      outputs: createOutputs(myPublicKey, targetPublicKey, amount, leftoverAmount),
+      message
     }
   });
 }

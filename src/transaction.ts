@@ -9,6 +9,10 @@ const ec = new ecdsa.ec('secp256k1');
  */
 export const REWARD_AMOUNT = 50;
 
+/**
+ * Max characters length of the transaction message
+ */
+export const TRANSACTION_MESSAGE_MAX_LENGTH = 130;
 
 export type TransactionOutput = {
   /**
@@ -73,6 +77,10 @@ export type Transaction = {
    * All outputs must add up to the total value of all inputs. If there is some leftover, an output should be added that sends the leftover back to the sender.
    */
   outputs: TransactionOutput[];
+  /**
+   * Optional message to be included with the transaction
+   */
+  message: string | null;
 }
 
 /**
@@ -80,7 +88,8 @@ export type Transaction = {
  */
 export function generateTransactionID(transaction: Transaction): string {
   const content = transaction.inputs.map(input => input.transactionId + input.transactionOutputIndex).join('') +
-    transaction.outputs.map(output => output.address + output.amount).join('');
+    transaction.outputs.map(output => output.address + output.amount).join('') +
+    (transaction.message || '');
   return getHash(content);
 }
 
@@ -113,11 +122,12 @@ export function signTransaction(transaction: Transaction, secretKey: string): Tr
 /**
  * Helper for creating a transaction with calculated id, and signed
  */
-export function createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[], secretKey: string): Transaction {
+export function createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[], message: string | null, secretKey: string): Transaction {
   let transaction = {
     id: '',
     inputs,
-    outputs
+    outputs,
+    message
   };
   transaction = {
     ...transaction,
@@ -137,7 +147,7 @@ export function createCoinbaseTransaction(blockHeight: number, publicKey: string
   }], [{
     address: publicKey,
     amount: REWARD_AMOUNT
-  }], secretKey);
+  }], null, secretKey);
 }
 
 /**
@@ -190,6 +200,16 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
     throw new Error('Can\'t create output for 0');
   }
 
+  // Validate that the transaction message is valid type
+  if (!(typeof transaction.message === 'string' || transaction.message === null)) {
+    throw new Error('Invalid message type');
+  }
+
+  // Validate that the transaction message is valid if exists
+  if (transaction.message && transaction.message.length > TRANSACTION_MESSAGE_MAX_LENGTH) {
+    throw new Error(`Message exceeds ${TRANSACTION_MESSAGE_MAX_LENGTH} chacracters`);
+  }
+
   return true;
 }
 
@@ -221,6 +241,11 @@ export function validateCoinbaseTransaction(transaction: Transaction, blockHeigh
   if (transaction.outputs[0].amount !== REWARD_AMOUNT) {
     throw new Error('Coinbase transaction value must be for ' + REWARD_AMOUNT);
   }
+
+  if (transaction.message !== null) {
+    throw new Error('Coinbase transaction can\'t include a message');
+  }
+
   return true;
 }
 
