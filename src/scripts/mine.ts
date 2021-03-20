@@ -1,4 +1,4 @@
-import { Chain, createBlock, mineBlock } from '../block';
+import { Chain, createBlock, getDifficultyForNextBlock, mineBlock } from '../block';
 import { Transaction } from '../transaction';
 import { createCoinbaseTransaction } from '../transaction';
 import commandLineArgs from 'command-line-args';
@@ -21,9 +21,12 @@ Promise.all([
   get('/unconfirmed-transactions')
 ]).then((responses) => {
   const [chain, transactions]: [Chain<Transaction[]>, Transaction[]] = responses;
+  console.log(`Block will include ${transactions.length} transactions`)
   const coinbaseTransaction = createCoinbaseTransaction(chain.length, options.publicKey, options.secretKey);
   const block = createBlock([coinbaseTransaction, ...transactions], chain[chain.length - 1].hash);
-  const minedBlock = mineBlock(2, block);
+  const requiredDifficulty = getDifficultyForNextBlock(chain);
+  console.log(`Mining with difficulty ${requiredDifficulty}`);
+  const minedBlock = mineBlock(requiredDifficulty, block);
   post('/mine-block', minedBlock)
     .then(res => console.log(res))
     .catch(err => console.error(err));

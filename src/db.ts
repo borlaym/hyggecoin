@@ -1,6 +1,6 @@
 // Fake a db until everything is ready. I don't want to reset the db every time I change something
 
-import { Block, Chain, createBlock, validateChain } from "./block";
+import { Block, Chain, checkDifficulty, createBlock, getDifficultyForNextBlock, validateChain } from "./block";
 import firebase from "./firebase";
 import { calculateUnspentOutputs, createOutputs, createUnsignedInputFromUnspentOutput, Transaction, TransactionInput, TransactionOutput, UnspentTransactionOutput, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction";
 
@@ -62,6 +62,11 @@ export function addBlock(block: Block<Transaction[]>): Promise<boolean> {
     if (!validateChain([...chain, block])) {
       throw new Error('Invalid chain');
     }
+    const requiredDifficulty = getDifficultyForNextBlock(chain);
+    if (!checkDifficulty(requiredDifficulty, block.hash)) {
+      throw new Error('Block doesn\'t meet difficulty criteria');
+    }
+
     const remainingUnconfirmedTransactions = unconfirmedTransactions.filter(unconfirmedTransaction => !block.data.find(transactionOnBlock => transactionOnBlock.id === unconfirmedTransaction.id));
     // Update chain with new block and remove mined transactions from unconfirmed
     return Promise.all([
