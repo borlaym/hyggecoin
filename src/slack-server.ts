@@ -199,7 +199,7 @@ slackApp.command('/hyggecoin', async ({ command, ack, client, respond }) => {
     }
     const senderWallet = await ensureSlackWallet(sender);
     const receiverWallet = await ensureSlackWallet(receiverUser.id);
-    createTransaction(senderWallet.publicKey, receiverWallet.publicKey, optionalMessage ? optionalMessage.join(' ') : null, Number(amount))
+    createTransaction(senderWallet.publicKey, receiverWallet.publicKey, optionalMessage && optionalMessage.length > 0 ? optionalMessage.join(' ') : null, Number(amount))
       .then(transaction => {
         const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
         addTransaction(signedTransaction)
@@ -224,7 +224,7 @@ slackApp.command('/hyggecoin', async ({ command, ack, client, respond }) => {
                 client.apiCall('chat.postMessage', {
                   channel: (conversations.channels as any)[0].id,
                   link_names: true,
-                  text: `Received ${amount} coins from ${(senderInfo.user as any).real_name}!${optionalMessage ? ` They included the following message: "${optionalMessage.join(' ')}"` : ''}`
+                  text: `Received ${amount} coins from ${(senderInfo.user as any).real_name}!${optionalMessage && optionalMessage.length > 0 ? ` They included the following message: "${optionalMessage.join(' ')}"` : ''}`
                 }).catch(err => console.error(err))
               }
             })
