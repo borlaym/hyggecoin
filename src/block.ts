@@ -1,4 +1,4 @@
-import { getHash } from "./util";
+import { averageDifference, chunk, getHash } from "./util";
 
 /**
  * A single block in a blockchain
@@ -107,4 +107,62 @@ export function validateChain<T>(chain: Chain<T>) {
       block.previousHash === chain[i -1].hash // previousHash is the save as previous block's hash
     );
   }).filter(isValid => !isValid).length === 0;
+}
+
+/**
+ * The number of blocks after which we recheck the difficulty
+ */
+export const DIFFICULTY_CHECK_INTERVAL = 10;
+
+export const MINUTE = 1000 * 60;
+export const HOUR = 60 * MINUTE;
+
+/**
+ * Expected time for a block to be mined
+ */
+export const DIFFICULTY_EXPECTED_MINING_TIME = 20 * MINUTE;
+
+/**
+ * If the average mining time was lower or larger by this amount than the expected, don't update the difficulty
+ */
+export const DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER = 0.2;
+
+/**
+ * The starting difficulty for an empty chain
+ */
+export const DIFFICULTY_STARTING = 5;
+
+export const DIFFICULTY_MIN = 2;
+export const DIFFICULTY_MAX = 10;
+
+/**
+ * Gets required difficulty at the end of a given timestamp array. For testability purposes
+ */
+export function getDifficultyForNextBlockFromTimestamps(timestamps: number[]): number {
+  // Split the array into equal length chunks
+  const chunks = chunk(timestamps, DIFFICULTY_CHECK_INTERVAL);
+  return chunks.reduce<number>((difficulty, currentChunk) => {
+    // Only change difficulty for full chunks - ignore the last, incomplete chunk
+    if (currentChunk.length < DIFFICULTY_CHECK_INTERVAL) {
+      return difficulty;
+    }
+    // Calculate averate mining time
+    const averageMiningTime = averageDifference(currentChunk);
+    if (averageMiningTime > DIFFICULTY_EXPECTED_MINING_TIME * (1 + DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER)) {
+      return Math.min(difficulty + 1, DIFFICULTY_MAX);
+    }
+
+    if (averageMiningTime < DIFFICULTY_EXPECTED_MINING_TIME * (1 - DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER)) {
+      return Math.max(difficulty - 1, DIFFICULTY_MIN);
+    }
+
+    return difficulty;
+  }, DIFFICULTY_STARTING);
+}
+
+/**
+ * Gets the required difficulty at the end of a given chain
+ */
+export function getDifficultyForNextBlock<T>(chain: Block<T>[]): number {
+  return getDifficultyForNextBlockFromTimestamps(chain.map(block => block.timestamp));
 }
