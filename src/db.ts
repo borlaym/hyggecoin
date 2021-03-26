@@ -1,11 +1,12 @@
 // Fake a db until everything is ready. I don't want to reset the db every time I change something
 
-import { Block, Chain, checkDifficulty, createBlock, getDifficultyForNextBlock, validateChain } from "./block";
+import { Block, Chain, checkDifficulty, createBlock, getDifficultyForNextBlock, getHashBase, validateChain } from "./block";
 import firebase from "./firebase";
 import { calculateUnspentOutputs, createOutputs, createUnsignedInputFromUnspentOutput, Transaction, TransactionInput, TransactionOutput, UnspentTransactionOutput, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction";
 
 const chainRef = firebase.ref('/chain');
 const transactionsRef = firebase.ref('/transactions');
+const hashDebugRef = firebase.ref('/hash-debug');
 
 export const GENESIS_BLOCK: Block<Transaction[]> = {
   previousHash: '0',
@@ -75,7 +76,11 @@ export function addBlock(block: Block<Transaction[]>): Promise<boolean> {
     // Update chain with new block and remove mined transactions from unconfirmed
     return Promise.all([
       chainRef.push(block),
-      transactionsRef.set(remainingUnconfirmedTransactions)
+      transactionsRef.set(remainingUnconfirmedTransactions),
+      hashDebugRef.push({
+        hash: block.hash,
+        hashBase: getHashBase(block)
+      })
     ]).then(() => true)
   });
 }

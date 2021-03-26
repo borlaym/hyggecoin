@@ -33,16 +33,23 @@ export type Block<T> = {
 export type Chain<T> = Block<T>[];
 
 /**
- * Calculate a block's hash based on all its other information, ensuring that you can't change the contents of the block without the hash changing
- * Uses sha256
+ * Get the string from a block the hash is calculated from
  */
-export function calculateBlockHash<T>({
+export function getHashBase<T>({
   previousHash,
   timestamp,
   data,
   nonce
 }: Block<T>): string {
-  return getHash(previousHash + timestamp + JSON.stringify(data) + nonce);
+  return previousHash + timestamp + JSON.stringify(data) + nonce;
+}
+
+/**
+ * Calculate a block's hash based on all its other information, ensuring that you can't change the contents of the block without the hash changing
+ * Uses sha256
+ */
+export function calculateBlockHash<T>(block: Block<T>): string {
+  return getHash(getHashBase(block));
 }
 
 /**
