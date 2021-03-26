@@ -44,10 +44,14 @@ export function addTransaction(transaction: Transaction): Promise<Transaction> {
     getBlocks(),
     getUnconfirmedTransactions()
   ]).then(([chain, unconfirmedTransactions]) => {
-    if (validateTransaction(transaction, calculateUnspentOutputs(chain, unconfirmedTransactions), unconfirmedTransactions)) {
-      return transactionsRef.push(transaction).then(() => transaction);
+    try {
+      if (validateTransaction(transaction, calculateUnspentOutputs(chain, unconfirmedTransactions), unconfirmedTransactions)) {
+        return transactionsRef.push(transaction).then(() => transaction);
+      }
+      return Promise.reject(new Error('Unable to valdidate transaction'));
+    } catch (err) {
+      return Promise.reject(err);
     }
-    throw new Error('Unable to add transaction, invalid transaction');
   })
 }
 

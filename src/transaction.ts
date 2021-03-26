@@ -157,27 +157,27 @@ export function validateOutput(output: TransactionOutput): Error | null {
 
   // Validate output address
   if (typeof output.address !== 'string') {
-    return new Error('Output address needs to be a valid address');
+    throw new Error('Output address needs to be a valid address');
   }
 
   // Validate that no outputs are for 0 amount
   if (output.amount === 0) {
-    return new Error('Can\'t create output for 0');
+    throw new Error('Can\'t create output for 0');
   }
 
   // Validate that no outputs are for negative amount
   if (output.amount < 0) {
-    return new Error('Can\'t create output for negative amount');
+    throw new Error('Can\'t create output for negative amount');
   }
 
   // Validate that no outputs are for more than javascript's safe integer
   if (output.amount > Number.MAX_SAFE_INTEGER) {
-    return new Error(`Can\'t create output for more than ${Number.MAX_SAFE_INTEGER}`);
+    throw new Error(`Can\'t create output for more than ${Number.MAX_SAFE_INTEGER}`);
   }
 
   // Validate that no fraction outputs have a greater precision than allowed
   if (!Number.isInteger(output.amount)) {
-    return new Error(`Only whole coins can be sent`);
+    throw new Error(`Only whole coins can be sent`);
   }
 
   return null;
@@ -229,10 +229,7 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
   }
 
   // Validate outputs
-  const outputError = transaction.outputs.find(output => validateOutput(output));
-  if (outputError) {
-    throw outputError;
-  }
+  transaction.outputs.forEach(output => validateOutput(output));
 
   // Validate that the transaction message is valid type
   if (!(typeof transaction.message === 'string' || transaction.message === null)) {
