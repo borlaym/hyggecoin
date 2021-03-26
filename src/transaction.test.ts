@@ -1,4 +1,4 @@
-import { balanceOfAddress, createCoinbaseTransaction, createOutputs, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, validateCoinbaseTransaction, validateTransaction } from "./transaction"
+import { balanceOfAddress, createCoinbaseTransaction, createOutputs, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, validateCoinbaseTransaction, validateOutput, validateTransaction } from "./transaction"
 import { generateKeys } from "./wallet"
 import { createBlock, validateChain } from "./block";
 import { GENESIS_BLOCK } from "./db";
@@ -87,23 +87,35 @@ describe('transaction', () => {
       expect(validateCoinbaseTransaction(BLOCK_1_COINBASE_TRANSACTION, 1)).toBe(true);
     })
   })
-  describe('creating transactions', () => {
+  describe('validating transactions', () => {
     const transactionWithId = {
       ...BLOCK_2_ALICE_SENDS_TO_BRUCE,
       id: generateTransactionID(BLOCK_2_ALICE_SENDS_TO_BRUCE)
     };
     const signedTransaction = signTransactionInputs(transactionWithId, aliceSecret);
-    it('signTransactionInputs', () => {
-      expect(BLOCK_2_ALICE_SENDS_TO_BRUCE.inputs[0].signature.length).toBeGreaterThan(100);
-    })
     it('validateTransaction', () => {
       expect(validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [])).toBe(true)
     })
-    it('validateTransaction should return false if a referenced output is already among unconfirmed transactions', () => {
+    it('validateTransaction should throw error if a referenced output is already among unconfirmed transactions', () => {
       expect(() =>
         validateTransaction(signedTransaction, createUnspentTransactionOutputs(BLOCK_1_COINBASE_TRANSACTION), [UNCONFIRMED_TRANSACTION])
       ).toThrowError('Transaction references an output already used by another unconfirmed transaction')
     })
+    describe('output amount', () => {
+      it('should not allow 0 or negative', () => {
+        expect(validateOutput({ address: brucePublic, amount: 0 })).toEqual(new Error('Can\'t create output for 0'));
+        expect(validateOutput({ address: brucePublic, amount: -10 })).toEqual(new Error('Can\'t create output for negative amount'))
+      })
+      it('should only allow sending integers', () => {
+        expect(validateOutput({ address: brucePublic, amount: 0.000001 })).toEqual(new Error('Only whole coins can be sent'));
+      })
+    })
+  })
+  describe('creating transactions', () => {
+    it('signTransactionInputs', () => {
+      expect(BLOCK_2_ALICE_SENDS_TO_BRUCE.inputs[0].signature.length).toBeGreaterThan(100);
+    })
+
     it('transaction message should be included in hash', () => {
       const transaction: Transaction = {
         id: '',

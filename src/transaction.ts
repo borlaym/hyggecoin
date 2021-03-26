@@ -151,6 +151,39 @@ export function createCoinbaseTransaction(blockHeight: number, publicKey: string
 }
 
 /**
+ * Validate transaction outputs
+ */
+export function validateOutput(output: TransactionOutput): Error | null {
+
+  // Validate output address
+  if (typeof output.address !== 'string') {
+    return new Error('Output address needs to be a valid address');
+  }
+
+  // Validate that no outputs are for 0 amount
+  if (output.amount === 0) {
+    return new Error('Can\'t create output for 0');
+  }
+
+  // Validate that no outputs are for negative amount
+  if (output.amount < 0) {
+    return new Error('Can\'t create output for negative amount');
+  }
+
+  // Validate that no outputs are for more than javascript's safe integer
+  if (output.amount > Number.MAX_SAFE_INTEGER) {
+    return new Error(`Can\'t create output for more than ${Number.MAX_SAFE_INTEGER}`);
+  }
+
+  // Validate that no fraction outputs have a greater precision than allowed
+  if (!Number.isInteger(output.amount)) {
+    return new Error(`Only whole coins can be sent`);
+  }
+
+  return null;
+}
+
+/**
  * Determines whether a transaction is valid or not, checking id and that the inputs are valid, and that inputs equal outputs
  */
 export function validateTransaction(transaction: Transaction, myUnspentTransactionOutputs: UnspentTransactionOutput[], unconfirmedTransactions: Transaction[]): boolean {
@@ -195,9 +228,10 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
     throw new Error('Input and output values do not match in transaction.');
   }
 
-  // Validate that no outputs are for 0 amount
-  if (transaction.outputs.find(output => output.amount === 0)) {
-    throw new Error('Can\'t create output for 0');
+  // Validate outputs
+  const outputError = transaction.outputs.find(output => validateOutput(output));
+  if (outputError) {
+    throw outputError;
   }
 
   // Validate that the transaction message is valid type
