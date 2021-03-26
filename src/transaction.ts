@@ -126,8 +126,8 @@ export function createTransaction(inputs: TransactionInput[], outputs: Transacti
   let transaction = {
     id: '',
     inputs,
-    outputs,
-    message
+    message,
+    outputs
   };
   transaction = {
     ...transaction,
