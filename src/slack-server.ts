@@ -230,6 +230,13 @@ slackApp.command('/hyggecoin', async ({ command, ack, client, respond }) => {
             })
         })
       })
+      .catch(err => {
+        console.error(err);
+        respond({
+          text: err.message,
+          response_type: 'ephemeral'
+        });
+      });
   });
 });
 
