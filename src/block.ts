@@ -130,7 +130,7 @@ export const DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER = 0.2;
 /**
  * The starting difficulty for an empty chain
  */
-export const DIFFICULTY_STARTING = 5;
+export const DIFFICULTY_STARTING = 4;
 
 export const DIFFICULTY_MIN = 2;
 export const DIFFICULTY_MAX = 10;

@@ -7,7 +7,7 @@ const ec = new ecdsa.ec('secp256k1');
 /**
  * Amount of coins rewarded for the miner of the block
  */
-export const REWARD_AMOUNT = 50;
+export const REWARD_AMOUNT = 10;
 
 /**
  * Max characters length of the transaction message
@@ -146,7 +146,7 @@ export function createCoinbaseTransaction(blockHeight: number, publicKey: string
     transactionOutputIndex: blockHeight
   }], [{
     address: publicKey,
-    amount: REWARD_AMOUNT
+    amount: blockHeight === 1 ? 500 : REWARD_AMOUNT
   }], null, secretKey);
 }
 
@@ -272,8 +272,10 @@ export function validateCoinbaseTransaction(transaction: Transaction, blockHeigh
     throw new Error('Coinbase transaction can only have one output.');
   }
 
-  if (transaction.outputs[0].amount !== REWARD_AMOUNT) {
-    throw new Error('Coinbase transaction value must be for ' + REWARD_AMOUNT);
+  const correctRewardAmount = blockHeight === 1 ? 500 : REWARD_AMOUNT;
+
+  if (transaction.outputs[0].amount !== correctRewardAmount) {
+    throw new Error('Coinbase transaction value must be for ' + correctRewardAmount);
   }
 
   if (transaction.message !== null) {
