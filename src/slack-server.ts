@@ -111,7 +111,7 @@ slackApp.event('reaction_added', async ({ event, client }) => {
         default: return 0;
       }
     })()
-    createTransaction(senderWallet.publicKey, receiverWallet.publicKey, null, amount)
+    createTransaction(senderWallet.publicKey, receiverWallet.publicKey, '', amount)
     .then(transaction => {
       const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
       addTransaction(signedTransaction)
@@ -199,7 +199,7 @@ slackApp.command('/hyggecoin', async ({ command, ack, client, respond }) => {
     }
     const senderWallet = await ensureSlackWallet(sender);
     const receiverWallet = await ensureSlackWallet(receiverUser.id);
-    createTransaction(senderWallet.publicKey, receiverWallet.publicKey, optionalMessage && optionalMessage.length > 0 ? optionalMessage.join(' ') : null, Number(amount))
+    createTransaction(senderWallet.publicKey, receiverWallet.publicKey, optionalMessage && optionalMessage.length > 0 ? optionalMessage.join(' ') : '', Number(amount))
       .then(transaction => {
         const signedTransaction = signTransaction(transaction, senderWallet.secretKey);
         addTransaction(signedTransaction)

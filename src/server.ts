@@ -93,7 +93,7 @@ receiver.app.post('/authenticated/send-coins', function (req, res, next) {
   if (amount === 0) {
     return next(new Error('Can\'t send 0 coins'));
   }
-  createTransaction(req.wallet.publicKey, target, message || null, amount)
+  createTransaction(req.wallet.publicKey, target, message || '', amount)
     .then(transaction => {
       const signedTransaction = signTransaction(transaction, req.wallet.secretKey);
       addTransaction(signedTransaction)

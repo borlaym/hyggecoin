@@ -25,7 +25,7 @@ const BLOCK_2_ALICE_SENDS_TO_BRUCE = createTransaction([{
 }, {
   address: alicePublic,
   amount: 45
-}], null, aliceSecret);
+}], '', aliceSecret);
 
 const BLOCK_3_COINBASE_TRANSACTION = createCoinbaseTransaction(3, alicePublic, aliceSecret);
 
@@ -39,7 +39,7 @@ const BLOCK_3_ALICE_SENDS_TO_BRUCE = createTransaction([{
 }, {
   address: alicePublic,
   amount: 35
-}], null, aliceSecret);
+}], '', aliceSecret);
 
 const BLOCK_4_COINBASE_TRANSACTION = createCoinbaseTransaction(4, alicePublic, aliceSecret);
 
@@ -57,7 +57,7 @@ const BLOCK_4_BRUCE_SENDS_TO_ALICE = createTransaction([{
 }, {
   address: brucePublic,
   amount: 3
-}], null, bruceSecret);
+}], '', bruceSecret);
 
 // Test if it works correctly if the transaction references a transaction in the same block
 const BLOCK_4_ALICE_SENDS_SOME_BACK = createTransaction([{
@@ -70,7 +70,7 @@ const BLOCK_4_ALICE_SENDS_SOME_BACK = createTransaction([{
 }, {
   address: alicePublic,
   amount: 10
-}], null, bruceSecret);
+}], '', bruceSecret);
 
 const UNCONFIRMED_TRANSACTION = createTransaction([{
   transactionId: BLOCK_1_COINBASE_TRANSACTION.id,
@@ -79,7 +79,7 @@ const UNCONFIRMED_TRANSACTION = createTransaction([{
 }], [{
   address: brucePublic,
   amount: 50
-}], null, aliceSecret);
+}], '', aliceSecret);
 
 describe('transaction', () => {
   describe('validateCoinbaseTransaction', () => {
@@ -121,7 +121,7 @@ describe('transaction', () => {
         id: '',
         inputs: [],
         outputs: [],
-        message: null
+        message: ''
       };
       const id = generateTransactionID({ ...transaction, message: 'This is a message'});
       const id2 = generateTransactionID(transaction);

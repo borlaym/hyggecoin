@@ -80,7 +80,7 @@ export type Transaction = {
   /**
    * Optional message to be included with the transaction
    */
-  message: string | null;
+  message: string;
 }
 
 /**
@@ -122,7 +122,7 @@ export function signTransaction(transaction: Transaction, secretKey: string): Tr
 /**
  * Helper for creating a transaction with calculated id, and signed
  */
-export function createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[], message: string | null, secretKey: string): Transaction {
+export function createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[], message: string, secretKey: string): Transaction {
   let transaction = {
     id: '',
     inputs,
@@ -147,7 +147,7 @@ export function createCoinbaseTransaction(blockHeight: number, publicKey: string
   }], [{
     address: publicKey,
     amount: blockHeight === 1 ? 500 : REWARD_AMOUNT
-  }], null, secretKey);
+  }], 'Coinbase transaction', secretKey);
 }
 
 /**
@@ -232,12 +232,12 @@ export function validateTransaction(transaction: Transaction, myUnspentTransacti
   transaction.outputs.forEach(output => validateOutput(output));
 
   // Validate that the transaction message is valid type
-  if (!(typeof transaction.message === 'string' || transaction.message === null)) {
+  if (typeof transaction.message !== 'string') {
     throw new Error('Invalid message type');
   }
 
   // Validate that the transaction message is valid if exists
-  if (transaction.message && transaction.message.length > TRANSACTION_MESSAGE_MAX_LENGTH) {
+  if (transaction.message.length > TRANSACTION_MESSAGE_MAX_LENGTH) {
     throw new Error(`Message exceeds ${TRANSACTION_MESSAGE_MAX_LENGTH} chacracters`);
   }
 
@@ -275,8 +275,8 @@ export function validateCoinbaseTransaction(transaction: Transaction, blockHeigh
     throw new Error('Coinbase transaction value must be for ' + correctRewardAmount);
   }
 
-  if (transaction.message !== null) {
-    throw new Error('Coinbase transaction can\'t include a message');
+  if (transaction.message !== 'Coinbase transaction') {
+    throw new Error('Coinbase transaction can\'t include a custom message');
   }
 
   return true;
