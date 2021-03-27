@@ -3,20 +3,23 @@ import clsx from 'clsx';
 import { makeStyles } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Drawer from '@material-ui/core/Drawer';
-import Box from '@material-ui/core/Box';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import List from '@material-ui/core/List';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
-import Badge from '@material-ui/core/Badge';
 import Container from '@material-ui/core/Container';
 import Grid from '@material-ui/core/Grid';
-import Paper from '@material-ui/core/Paper';
 import MenuIcon from '@material-ui/icons/Menu';
+import DashboardIcon from '@material-ui/icons/Dashboard';
+import WalletIcon from '@material-ui/icons/AccountBalanceWallet';
+import MemoryIcon from '@material-ui/icons/Memory';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import NotificationsIcon from '@material-ui/icons/Notifications';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
+import { useHistory } from 'react-router';
 
 const drawerWidth = 240;
 
@@ -99,7 +102,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function Dashboard() {
+export default function Layout({ children }: { children: React.ReactElement }) {
   const classes = useStyles();
   const [open, setOpen] = React.useState(true);
   const handleDrawerOpen = () => {
@@ -108,7 +111,7 @@ export default function Dashboard() {
   const handleDrawerClose = () => {
     setOpen(false);
   };
-  const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
+  const history = useHistory();
 
   return (
     <div className={classes.root}>
@@ -125,13 +128,8 @@ export default function Dashboard() {
             <MenuIcon />
           </IconButton>
           <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
-            Dashboard
+            Hyggecoin
           </Typography>
-          <IconButton color="inherit">
-            <Badge badgeContent={4} color="secondary">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
         </Toolbar>
       </AppBar>
       <Drawer
@@ -147,36 +145,35 @@ export default function Dashboard() {
           </IconButton>
         </div>
         <Divider />
-        <List>List</List>
-        <Divider />
-        <List>Secondary list</List>
+        <List>
+          <div>
+            <ListItem button onClick={() => history.push("/chain-explorer")}>
+              <ListItemIcon>
+                <DashboardIcon />
+              </ListItemIcon>
+              <ListItemText primary="Chain Explorer" />
+            </ListItem>
+            <ListItem button onClick={() => history.push("/wallet")}>
+              <ListItemIcon>
+                <WalletIcon />
+              </ListItemIcon>
+              <ListItemText primary="Wallet" />
+            </ListItem>
+            <ListItem button onClick={() => history.push("/mine")}>
+              <ListItemIcon>
+                <MemoryIcon />
+              </ListItemIcon>
+              <ListItemText primary="Mine Coins" />
+            </ListItem>
+          </div>
+        </List>
       </Drawer>
       <main className={classes.content}>
         <div className={classes.appBarSpacer} />
         <Container maxWidth="lg" className={classes.container}>
           <Grid container spacing={3}>
-            {/* Chart */}
-            <Grid item xs={12} md={8} lg={9}>
-              <Paper className={fixedHeightPaper}>
-                Chart
-              </Paper>
-            </Grid>
-            {/* Recent Deposits */}
-            <Grid item xs={12} md={4} lg={3}>
-              <Paper className={fixedHeightPaper}>
-                Deposits
-              </Paper>
-            </Grid>
-            {/* Recent Orders */}
-            <Grid item xs={12}>
-              <Paper className={classes.paper}>
-                Orders
-              </Paper>
-            </Grid>
+            {children}
           </Grid>
-          <Box pt={4}>
-            Copyright
-          </Box>
         </Container>
       </main>
     </div>
