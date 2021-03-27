@@ -1,9 +1,10 @@
-import { makeStyles, Card, CardContent, Accordion, AccordionSummary, AccordionDetails } from '@material-ui/core';
+import { makeStyles, Card, CardContent, Accordion, AccordionSummary, AccordionDetails, Grid } from '@material-ui/core';
 import React from 'react';
 import { Block } from '../../../src/block';
 import { Transaction } from '../../../src/transaction';
 import Typography from '@material-ui/core/Typography';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import TransactionComponent from './Transaction';
 
 type Props = {
   block: Block<Transaction[]>;
@@ -41,9 +42,13 @@ export default function BlockComponent({ block, index }: Props) {
             <Typography color="textSecondary">Transactions</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography>
-              TODO list transactions here
-            </Typography>
+              <Grid container spacing={1}>
+                {block.data.map(transaction => (
+                  <Grid item xs={12}>
+                    <TransactionComponent key={transaction.id} transaction={transaction} />
+                  </Grid>
+                ))}
+              </Grid>
           </AccordionDetails>
         </Accordion>
 
