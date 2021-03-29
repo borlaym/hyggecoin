@@ -103,6 +103,7 @@ slackApp.event('reaction_added', async ({ event, client }) => {
     const senderWallet = await ensureSlackWallet(sender);
     const receiverWallet = await ensureSlackWallet(receiver);
     const channel = event.item.type === 'message' ? event.item.channel : null;
+    const timestamp = event.item.type === 'message' ? event.item.ts : null;
     const amount = (() => {
       switch (event.reaction) {
         case 'hyggecoin-bronze': return 1;
@@ -139,15 +140,28 @@ slackApp.event('reaction_added', async ({ event, client }) => {
             }),
             client.apiCall('users.info', {
               user: sender
-            })
+            }),
+            channel && timestamp ? client.apiCall('conversations.history', {
+              channel,
+              latest: timestamp,
+              limit: 1,
+              inclusive: true
+            }).catch(() => Promise.resolve(null)) : Promise.resolve(null)
           ])
-          .then(([conversations, senderInfo]) => {
+          .then(([conversations, senderInfo, messageInfo]) => {
             if (conversations.channels && (conversations.channels as any).length > 0) {
+              const reactionMessage = (() => {
+                if (!messageInfo || !messageInfo.messages || messageInfo.messages.length === 0) {
+                  return null;
+                }
+                const message = messageInfo.messages[0];
+                return message.text ? ` as a reaction to your message '${message.text.length > 50 ? message.text.substr(0, 50) + '...' : message.text}'` : (message.files && message.files.length > 0 ? ` as a reaction to your file` : '');
+              })();
               client.apiCall('chat.postMessage', {
                 channel: (conversations.channels as any)[0].id,
                 icon_emoji: `:${event.reaction}:`,
                 link_names: true,
-                text: `Received ${amount} coins from @${(senderInfo.user as any).name}!`
+                text: `Received ${amount} coins from @${(senderInfo.user as any).name}${reactionMessage || ''}!`
               }).catch(err => console.error(err))
             }
           })
