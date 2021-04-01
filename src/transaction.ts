@@ -363,3 +363,17 @@ export function createOutputs(myPublicKey: string, receiverPublicKey: string, am
     amount
   }];
 }
+
+/**
+ * Find the sender's address based on the inputs of the transaction
+ */
+export function getSenderAddress(transaction: Transaction, chain: Chain<Transaction[]>): string | null {
+  const sampleInput = transaction.inputs[0];
+  if (!sampleInput.transactionId) {
+    return null;
+  }
+  const outputTransactionBlock = chain.find(block => block.data.find(transaction => transaction.id === sampleInput.transactionId));
+  const outputTransaction = outputTransactionBlock?.data.find(transaction => transaction.id === sampleInput.transactionId);
+  const output = outputTransaction?.outputs[sampleInput.transactionOutputIndex];
+  return output?.address || null;
+}
