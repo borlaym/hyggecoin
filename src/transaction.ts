@@ -377,3 +377,14 @@ export function getSenderAddress(transaction: Transaction, chain: Chain<Transact
   const output = outputTransaction?.outputs[sampleInput.transactionOutputIndex];
   return output?.address || null;
 }
+
+/**
+ * Get all transactions an address was involved in
+ */
+export function getTransactionsOfAddress(chain: Chain<Transaction[]>, unconfirmedTransactions: Transaction[], address: string): Transaction[] {
+  const transactions = chain.reduce<Transaction[]>((acc, block) => acc.concat(block.data), []).concat(unconfirmedTransactions);
+  console.log(transactions);
+  return transactions.filter(transaction => {
+    return transaction.outputs.find(output => output.address === address) || getSenderAddress(transaction, chain) === address
+  });
+}

@@ -3,6 +3,7 @@ import DataProvider from './components/DataProvider';
 import Layout from './components/Layout';
 import { HashRouter, Switch, Route } from 'react-router-dom';
 import BlockList from './components/BlockList';
+import Wallet from './components/Wallet';
 
 export default function App() {
 
@@ -13,6 +14,9 @@ export default function App() {
             <Switch>
               <Route path="/chain-explorer">
                 <BlockList />
+              </Route>
+              <Route path="/wallet/:address">
+                <Wallet />
               </Route>
             </Switch>
         </Layout>
