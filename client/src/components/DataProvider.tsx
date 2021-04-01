@@ -9,7 +9,7 @@ export default function DataProvider({ children }: { children: React.ReactElemen
   const [chain, setChain] = useState([]);
 
   const fetchChain = useCallback(() => {
-    fetch('http://localhost:9000/chain', {
+    fetch('http://hyggecoin.herokuapp.com/chain', {
       mode: 'cors',
       credentials: 'omit'
     })
