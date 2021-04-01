@@ -1,9 +1,10 @@
-import { ErrorRequestHandler } from 'express';
+import express, { ErrorRequestHandler } from 'express';
 import { authenticate, createWallet, getToken } from './wallet';
 import bodyParser from 'body-parser';
 import { addBlock, addTransaction, createTransaction, getBlocks, getUnconfirmedTransactions } from './db';
 import { signTransaction } from './transaction';
 import { receiver } from './slack-server';
+import path from 'path';
 
 receiver.app.use(bodyParser.urlencoded({
   extended: false
@@ -16,7 +17,10 @@ receiver.app.use('*', (req, res, next) => {
   next();
 })
 
-receiver.app.get('/', (req, res) => res.send('Hyggecoin Exchange'));
+
+
+receiver.app.get('/', (req, res) => res.sendFile(path.join(__dirname + '/../build/index.html')));
+receiver.app.use(express.static('build'));
 
 receiver.app.get('/chain', async (req, res, next) => {
   try {
