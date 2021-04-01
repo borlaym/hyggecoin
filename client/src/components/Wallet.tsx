@@ -44,17 +44,26 @@ export default function Wallet() {
               </TableHead>
               <TableBody>
                 {transactions.map((transaction) => {
+                  const isCoinbase = transaction.inputs.length === 1 &&
+                    transaction.outputs.length === 1 &&
+                    Number.isInteger(transaction.inputs[0].transactionOutputIndex) &&
+                    transaction.inputs[0].transactionId === '';
+                  const isSendingToYourself = !isCoinbase && !transaction.outputs.map(o => o.address).find(a => a !== address);
+                  if (isSendingToYourself) {
+                    return null;
+                  }
                   const senderAddress = getSenderAddress(transaction, chain);
                   const isOutgoing = senderAddress === address;
-                  const relevantOutput = transaction.outputs.find(output => output.address !== address);
+                  const relevantOutput = isOutgoing ?
+                    transaction.outputs.find(output => output.address !== address) :
+                    transaction.outputs.find(output => output.address === address);
                   const otherAddress = isOutgoing ? relevantOutput?.address : senderAddress;
-                  const otherAddressDisplay = otherAddress ? <Link to={`/wallet/${otherAddress}`}>{shortAddress(otherAddress)}</Link> : 'COINBASE'
-                  const amount = isOutgoing ? relevantOutput?.amount : transaction.outputs.find(output => output.address === address)?.amount;
+                  const otherAddressDisplay = otherAddress ? <Link to={`/wallet/${otherAddress}`}>{shortAddress(otherAddress)}</Link> : (isCoinbase ? 'COINBASE' : '-');
                   return (
                     <TableRow key={transaction.id}>
                       <TableCell>{isOutgoing ? 'Outgoing' : 'Incoming'}</TableCell>
                       <TableCell>{otherAddressDisplay}</TableCell>
-                      <TableCell align="right">{otherAddress ? amount : transaction.outputs[0].amount}</TableCell>
+                      <TableCell align="right">{otherAddress ? relevantOutput?.amount : transaction.outputs[0].amount}</TableCell>
                       <TableCell>{transaction.message}</TableCell>
                     </TableRow>
                   );
