@@ -54,7 +54,7 @@ export default function BlockList() {
                     <TableRow key={transaction.id}>
                       <TableCell>{isOutgoing ? 'Outgoing' : 'Incoming'}</TableCell>
                       <TableCell>{otherAddressDisplay}</TableCell>
-                      <TableCell align="right">{relevantOutput?.amount}</TableCell>
+                      <TableCell align="right">{relevantOutput ? relevantOutput.amount : transaction.outputs[0].amount}</TableCell>
                       <TableCell>{transaction.message}</TableCell>
                     </TableRow>
                   );
