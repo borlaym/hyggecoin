@@ -10,7 +10,6 @@ const useStyles = makeStyles(theme => ({
   paper: {
     padding: theme.spacing(2),
     display: 'flex',
-    overflow: 'auto',
     flexDirection: 'column',
     wordBreak: 'break-all'
   }
@@ -18,7 +17,7 @@ const useStyles = makeStyles(theme => ({
 
 
 
-export default function BlockList() {
+export default function Wallet() {
   const { address } = useParams<{ address: string }>();
   const chain = useContext(DataContext);
   const classes = useStyles();
