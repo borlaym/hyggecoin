@@ -49,11 +49,12 @@ export default function Wallet() {
                   const relevantOutput = transaction.outputs.find(output => output.address !== address);
                   const otherAddress = isOutgoing ? relevantOutput?.address : senderAddress;
                   const otherAddressDisplay = otherAddress ? <Link to={`/wallet/${otherAddress}`}>{shortAddress(otherAddress)}</Link> : 'COINBASE'
+                  const amount = isOutgoing ? relevantOutput?.amount : transaction.outputs.find(output => output.address === address)?.amount;
                   return (
                     <TableRow key={transaction.id}>
                       <TableCell>{isOutgoing ? 'Outgoing' : 'Incoming'}</TableCell>
                       <TableCell>{otherAddressDisplay}</TableCell>
-                      <TableCell align="right">{relevantOutput ? relevantOutput.amount : transaction.outputs[0].amount}</TableCell>
+                      <TableCell align="right">{otherAddress ? amount : transaction.outputs[0].amount}</TableCell>
                       <TableCell>{transaction.message}</TableCell>
                     </TableRow>
                   );
