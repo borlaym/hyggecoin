@@ -4,7 +4,7 @@ import BlockComponent from "./Block";
 import { DataContext } from "./DataProvider";
 
 export default function BlockList() {
-  const chain = useContext(DataContext);
+  const { chain } = useContext(DataContext);
 
   const reversedChain = useMemo(() => [...chain].reverse(), [chain]);
 

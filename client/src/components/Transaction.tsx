@@ -20,7 +20,7 @@ export function shortAddress(hash: string): string {
 
 export default function TransactionComponent({ transaction }: Props) {
   const classes = useStyles();
-  const chain = useContext(DataContext);
+  const { chain } = useContext(DataContext);
 
   const sender = getSenderAddress(transaction, chain);
 

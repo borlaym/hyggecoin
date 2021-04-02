@@ -19,7 +19,7 @@ const useStyles = makeStyles(theme => ({
 
 export default function Wallet() {
   const { address } = useParams<{ address: string }>();
-  const chain = useContext(DataContext);
+  const { chain } = useContext(DataContext);
   const classes = useStyles();
   const balance = chain.length > 0 ? balanceOfAddress(chain, [], address) : null;
   const transactions = useMemo(() => {

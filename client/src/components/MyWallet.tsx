@@ -1,7 +1,6 @@
 import { Grid, makeStyles, Paper, TextField, Typography } from "@material-ui/core";
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { DataContext } from "./DataProvider";
 
 const useStyles = makeStyles(theme => ({
   paper: {
