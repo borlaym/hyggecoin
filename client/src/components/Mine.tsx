@@ -75,11 +75,19 @@ export default function BlockList() {
 
   useEffect(() => {
     if (block) {
-      post('/mine-block', block).then(() => {
-        setSolutions(solutions => solutions + 1);
+      post('/mine-block', block).then((res) => {
+        if (res === success) {
+          setSolutions(solutions => solutions + 1);
+        }
         setHashCount(0);
         setBlock(null);
-        setStartTime(null);
+        setStartTime(null)
+      })
+      .catch(err => {
+        console.log(err);
+        setHashCount(0);
+        setBlock(null);
+        setStartTime(null)
       });
     }
   }, [block]);
