@@ -14,10 +14,9 @@ receiver.app.use(bodyParser.json());
 
 receiver.app.use('*', (req, res, next) => {
   res.setHeader('access-control-allow-origin', '*');
+  res.setHeader('access-control-allow-headers', '*');
   next();
 })
-
-
 
 receiver.app.get('/', (req, res) => res.sendFile(path.join(__dirname + '/../build/index.html')));
 receiver.app.use(express.static('build'));
