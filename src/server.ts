@@ -20,7 +20,6 @@ receiver.app.use('*', (req, res, next) => {
 
 
 receiver.app.get('/', (req, res) => res.sendFile(path.join(__dirname + '/../build/index.html')));
-receiver.app.get('/worker.js', (req, res) => res.sendFile(path.join(__dirname + '/scripts/worker.js')));
 receiver.app.use(express.static('build'));
 
 receiver.app.get('/chain', async (req, res, next) => {
