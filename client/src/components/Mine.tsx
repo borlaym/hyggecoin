@@ -25,6 +25,7 @@ export default function BlockList() {
   const [hashCount, setHashCount] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [block, setBlock] = useState<Block<Transaction[]> | null>(null);
+  const [solutions, setSolutions] = useState(0);
   const worker = useRef<Worker | null>(null);
 
   const data = useMemo(() => {
@@ -72,6 +73,17 @@ export default function BlockList() {
     }
   }, [data, onWorkerEvent]);
 
+  useEffect(() => {
+    if (block) {
+      post('/mine-block', block).then(() => {
+        setSolutions(solutions => solutions + 1);
+        setHashCount(0);
+        setBlock(null);
+        setStartTime(null);
+      });
+    }
+  }, [block]);
+
   if (!unconfirmedTransactions) {
     return <>Loading...</>
   }
@@ -90,6 +102,7 @@ export default function BlockList() {
             <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Block will include {unconfirmedTransactions.length} transactions</Typography>
             {data?.difficulty && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Difficulty: {data.difficulty}</Typography>}
             {hashCount > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Mining in progress, tries: {hashCount}, hash rate: {elapsedTimeInSeconds && Math.floor(hashCount / elapsedTimeInSeconds)} hash/s</Typography>}
+            {solutions > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Solutions: {solutions}</Typography>}
           </Paper>
         </Grid>
     </Grid>
