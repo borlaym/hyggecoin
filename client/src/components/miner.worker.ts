@@ -45,7 +45,6 @@ export function mineBlock<T>(difficulty: number, block: Block<T>) {
       counter = 0;
     }
   }
-  console.log(finishedBlock);
   (postMessage as any)({
     type: 'count',
     count: counter
@@ -64,5 +63,3 @@ onmessage = function (event: MessageEvent<{
   console.log('worker started');
   mineBlock(event.data.difficulty, event.data.unminedBlock);
 }
-
-console.log('worker initialized')

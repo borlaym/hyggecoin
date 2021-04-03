@@ -1,7 +1,7 @@
 import { Grid, makeStyles, Paper, Typography } from "@material-ui/core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { post } from "../utils/getJson";
-import { Block, checkDifficulty, createBlock, getDifficultyForNextBlock, nextNonce } from "../../../src/block";
+import { Block, createBlock, getDifficultyForNextBlock } from "../../../src/block";
 import { createCoinbaseTransaction, Transaction } from "../../../src/transaction";
 import { DataContext } from "./DataProvider";
 // eslint-disable-next-line import/no-webpack-loader-syntax
@@ -26,7 +26,7 @@ export default function BlockList() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [block, setBlock] = useState<Block<Transaction[]> | null>(null);
   const [solutions, setSolutions] = useState(0);
-  const worker = useRef<Worker | null>(null);
+  const workers = useRef<Worker[] | null>(null);
 
   const data = useMemo(() => {
     if (!unconfirmedTransactions || chain.length === 0) {
@@ -45,6 +45,9 @@ export default function BlockList() {
     }
   }, [chain, unconfirmedTransactions, publicKey, secretKey]);
 
+  /**
+   * Update internal values / get the mined block when events are sent from workers
+   */
   const onWorkerEvent = useCallback((event: MessageEvent<WorkerEvent>) => {
     const workerEvent = event.data;
     if (workerEvent.type === 'count') {
@@ -55,24 +58,35 @@ export default function BlockList() {
     }
   }, []);
 
+  /**
+   * Setup / reset miners when new data is available
+   */
   useEffect(() => {
-    if (data?.unminedBlock && data?.difficulty) {
-      const miner = new Miner();
-      miner.postMessage({
-        unminedBlock: data.unminedBlock,
-        difficulty: data.difficulty
-      });
-      miner.onmessage = onWorkerEvent;
-      worker.current = miner;
+    if (data?.unminedBlock && data?.difficulty && !block) {
+      const newWorkers = []
+      for (let i = 0; i < navigator.hardwareConcurrency; i++) {
+        const miner = new Miner();
+        miner.postMessage({
+          unminedBlock: data.unminedBlock,
+          difficulty: data.difficulty
+        });
+        miner.onmessage = onWorkerEvent;
+        newWorkers.push(miner);
+      }
+      workers.current = newWorkers;
       setStartTime(startTime => startTime === null ? Date.now() : startTime);
     }
     return () => {
-      if (worker.current) {
-        worker.current.terminate();
+      if (workers.current) {
+        console.log('terminating all workers');
+        workers.current.forEach(worker => worker.terminate());
       }
     }
-  }, [data, onWorkerEvent]);
+  }, [data, onWorkerEvent, block]);
 
+  /**
+   * Send a mined block when ready to the server and reset state
+   */
   useEffect(() => {
     if (block) {
       post('/mine-block', block).then((res) => {
@@ -109,6 +123,7 @@ export default function BlockList() {
             <Typography component="h2" variant="h6" color="primary" gutterBottom>Mine block</Typography>
             <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Block will include {unconfirmedTransactions.length} transactions</Typography>
             {data?.difficulty && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Difficulty: {data.difficulty}</Typography>}
+            <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Using cores: {navigator.hardwareConcurrency}</Typography>
             {hashCount > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Mining in progress, tries: {hashCount}, hash rate: {elapsedTimeInSeconds && Math.floor(hashCount / elapsedTimeInSeconds)} hash/s</Typography>}
             {solutions > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Solutions: {solutions}</Typography>}
           </Paper>
