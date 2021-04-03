@@ -30,11 +30,11 @@ export default function BlockList() {
   const publicKey = localStorage.getItem('publicKey');
   const secretKey = localStorage.getItem('secret');
   const [hashCount, setHashCount] = useState(0);
-  const [startTime, setStartTime] = useState<number | null>(null);
   const [block, setBlock] = useState<Block<Transaction[]> | null>(null);
   const [solutions, setSolutions] = useState(0);
   const [cores, setCores] = useState(1);
   const workers = useRef<Worker[] | null>(null);
+  const progressInfo = useRef<Array<{ timestamp: number; count: number; }>>([]);
 
   const data = useMemo(() => {
     if (!unconfirmedTransactions || chain.length === 0 || !secretKey || !publicKey) {
@@ -82,7 +82,6 @@ export default function BlockList() {
         newWorkers.push(miner);
       }
       workers.current = newWorkers;
-      setStartTime(startTime => startTime === null ? Date.now() : startTime);
     }
     return () => {
       if (workers.current) {
@@ -103,13 +102,13 @@ export default function BlockList() {
         }
         setHashCount(0);
         setBlock(null);
-        setStartTime(null)
+        progressInfo.current = []
       })
       .catch(err => {
         console.log(err);
         setHashCount(0);
         setBlock(null);
-        setStartTime(null)
+        progressInfo.current = []
       });
     }
   }, [block]);
@@ -117,6 +116,16 @@ export default function BlockList() {
   const handleCoresChange = useCallback((event: React.ChangeEvent<{ name?: string | undefined; value: unknown }>) => {
     setCores(event.target.value as number);
   }, [])
+
+  /**
+   * Update the progressinfo array with the latest count, so we can calculate a rolling average of hashes / s
+   */
+  useEffect(() => {
+    progressInfo.current = [...progressInfo.current, { timestamp: Date.now(), count: hashCount }];
+    if (progressInfo.current.length > 200) {
+      progressInfo.current = progressInfo.current.slice(-200);
+    }
+  }, [hashCount]);
 
   if (!unconfirmedTransactions) {
     return <>Loading...</>
@@ -126,7 +135,12 @@ export default function BlockList() {
     return <>Please specify your public and secret keys in your Wallet</>;
   }
 
-  const elapsedTimeInSeconds = startTime !== null ? (Date.now() - startTime) / 1000 : null
+  /**
+   * Calculate a rolling average of the hashrate
+   */
+  const hashRate = progressInfo.current.length >= 2 ?
+    (progressInfo.current[progressInfo.current.length - 1].count - progressInfo.current[0].count) / ((progressInfo.current[progressInfo.current.length - 1].timestamp - progressInfo.current[0].timestamp) / 1000) :
+    null;
 
   return (
     <Grid container spacing={2}>
@@ -149,7 +163,7 @@ export default function BlockList() {
               </Select>
             </FormControl></Typography>
 
-            {hashCount > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Mining in progress, tries: {hashCount}, hash rate: {elapsedTimeInSeconds && Math.floor(hashCount / elapsedTimeInSeconds)} hashes/s</Typography>}
+            {hashCount > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Mining in progress, tries: {hashCount}, hash rate: {hashRate && Math.floor(hashRate / 1000)} khashes/s</Typography>}
             {solutions > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Solutions: {solutions}</Typography>}
           </Paper>
         </Grid>
