@@ -1,17 +1,20 @@
 {
   "files": {
-    "main.js": "/static/js/main.b49ded05.chunk.js",
-    "main.js.map": "/static/js/main.b49ded05.chunk.js.map",
+    "main.js": "/static/js/main.e3a8afd7.chunk.js",
+    "main.js.map": "/static/js/main.e3a8afd7.chunk.js.map",
     "runtime-main.js": "/static/js/runtime-main.900dd88b.js",
     "runtime-main.js.map": "/static/js/runtime-main.900dd88b.js.map",
-    "static/js/2.94f00d63.chunk.js": "/static/js/2.94f00d63.chunk.js",
-    "static/js/2.94f00d63.chunk.js.map": "/static/js/2.94f00d63.chunk.js.map",
+    "static/js/2.4602da36.chunk.js": "/static/js/2.4602da36.chunk.js",
+    "static/js/2.4602da36.chunk.js.map": "/static/js/2.4602da36.chunk.js.map",
     "index.html": "/index.html",
-    "static/js/2.94f00d63.chunk.js.LICENSE.txt": "/static/js/2.94f00d63.chunk.js.LICENSE.txt"
+    "static/js/2.4602da36.chunk.js.LICENSE.txt": "/static/js/2.4602da36.chunk.js.LICENSE.txt",
+    "static/js/miner.worker.b6a7ccd9.worker.js": "/static/js/miner.worker.b6a7ccd9.worker.js",
+    "static/js/miner.worker.b6a7ccd9.worker.js.LICENSE.txt": "/static/js/miner.worker.b6a7ccd9.worker.js.LICENSE.txt",
+    "static/js/miner.worker.b6a7ccd9.worker.js.map": "/static/js/miner.worker.b6a7ccd9.worker.js.map"
   },
   "entrypoints": [
     "static/js/runtime-main.900dd88b.js",
-    "static/js/2.94f00d63.chunk.js",
-    "static/js/main.b49ded05.chunk.js"
+    "static/js/2.4602da36.chunk.js",
+    "static/js/main.e3a8afd7.chunk.js"
   ]
 }
