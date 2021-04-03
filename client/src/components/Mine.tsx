@@ -76,7 +76,7 @@ export default function BlockList() {
   useEffect(() => {
     if (block) {
       post('/mine-block', block).then((res) => {
-        if (res === success) {
+        if (res === 'success') {
           setSolutions(solutions => solutions + 1);
         }
         setHashCount(0);
