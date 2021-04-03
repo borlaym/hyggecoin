@@ -29,10 +29,10 @@ export default function BlockList() {
   const workers = useRef<Worker[] | null>(null);
 
   const data = useMemo(() => {
-    if (!unconfirmedTransactions || chain.length === 0) {
+    if (!unconfirmedTransactions || chain.length === 0 || !secretKey || !publicKey) {
       return null;
     }
-    const coinbaseTransaction = createCoinbaseTransaction(chain.length, publicKey || '', secretKey || '');
+    const coinbaseTransaction = createCoinbaseTransaction(chain.length, publicKey, secretKey);
     const unminedBlock = createBlock([coinbaseTransaction, ...unconfirmedTransactions], chain[chain.length - 1].hash);
     const difficulty = getDifficultyForNextBlock(chain);
 
@@ -124,7 +124,7 @@ export default function BlockList() {
             <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Block will include {unconfirmedTransactions.length} transactions</Typography>
             {data?.difficulty && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Difficulty: {data.difficulty}</Typography>}
             <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Using cores: {navigator.hardwareConcurrency}</Typography>
-            {hashCount > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Mining in progress, tries: {hashCount}, hash rate: {elapsedTimeInSeconds && Math.floor(hashCount / elapsedTimeInSeconds)} hash/s</Typography>}
+            {hashCount > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Mining in progress, tries: {hashCount}, hash rate: {elapsedTimeInSeconds && Math.floor(hashCount / elapsedTimeInSeconds)} hashes/s</Typography>}
             {solutions > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Solutions: {solutions}</Typography>}
           </Paper>
         </Grid>

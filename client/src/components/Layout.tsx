@@ -157,7 +157,7 @@ export default function Layout({ children }: { children: React.ReactElement }) {
               <ListItemIcon>
                 <WalletIcon />
               </ListItemIcon>
-              <ListItemText primary="Wallet" />
+              <ListItemText primary="My Wallet" />
             </ListItem>
             <ListItem button onClick={() => history.push("/mine")}>
               <ListItemIcon>
