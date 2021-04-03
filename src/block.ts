@@ -137,10 +137,10 @@ export const DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER = 0.2;
 /**
  * The starting difficulty for an empty chain
  */
-export const DIFFICULTY_STARTING = 4;
+export const DIFFICULTY_STARTING = 7;
 
-export const DIFFICULTY_MIN = 2;
-export const DIFFICULTY_MAX = 10;
+export const DIFFICULTY_MIN = 5;
+export const DIFFICULTY_MAX = 15;
 
 /**
  * Gets required difficulty at the end of a given timestamp array. For testability purposes
@@ -156,11 +156,11 @@ export function getDifficultyForNextBlockFromTimestamps(timestamps: number[]): n
     // Calculate averate mining time
     const averageMiningTime = averageDifference(currentChunk);
     if (averageMiningTime > DIFFICULTY_EXPECTED_MINING_TIME * (1 + DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER)) {
-      return Math.min(difficulty + 1, DIFFICULTY_MAX);
+      return Math.min(difficulty - 1, DIFFICULTY_MAX);
     }
 
     if (averageMiningTime < DIFFICULTY_EXPECTED_MINING_TIME * (1 - DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER)) {
-      return Math.max(difficulty - 1, DIFFICULTY_MIN);
+      return Math.max(difficulty + 1, DIFFICULTY_MIN);
     }
 
     return difficulty;

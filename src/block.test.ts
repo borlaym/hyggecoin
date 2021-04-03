@@ -40,21 +40,21 @@ describe('blocks and blockchains', () => {
         ]);
         expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING);
       })
-      it('should decrease the difficulty if the average mining time is lower than expected', () => {
+      it('should increase the difficulty if the average mining time is lower than expected', () => {
         const timestamps = generateTimestampSequence(13, [
           [0, 10, DIFFICULTY_EXPECTED_MINING_TIME * (1 - DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER) - 1],
           [10, 20, DIFFICULTY_EXPECTED_MINING_TIME],
           [20, 100, 2 * DIFFICULTY_EXPECTED_MINING_TIME]
         ]);
-        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING - 1);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING + 1);
       })
-      it('should increase the difficulty if the average mining time is higher than expected', () => {
+      it('should decrease the difficulty if the average mining time is higher than expected', () => {
         const timestamps = generateTimestampSequence(13, [
           [0, 10, DIFFICULTY_EXPECTED_MINING_TIME * (1 + DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER) + 1],
           [10, 20, DIFFICULTY_EXPECTED_MINING_TIME],
           [20, 100, 2 * DIFFICULTY_EXPECTED_MINING_TIME]
         ]);
-        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING + 1);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING - 1);
       })
       it('should be able to both increase and decrease', () => {
         const timestamps = generateTimestampSequence(33, [
@@ -63,7 +63,7 @@ describe('blocks and blockchains', () => {
           [20, 30, 2 * DIFFICULTY_EXPECTED_MINING_TIME * (1 + DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER) + 1],
           [30, 100, DIFFICULTY_EXPECTED_MINING_TIME]
         ]);
-        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING + 1);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING - 1);
       })
   })
 })
