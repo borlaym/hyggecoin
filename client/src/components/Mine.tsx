@@ -1,4 +1,4 @@
-import { Grid, makeStyles, Paper, Typography } from "@material-ui/core";
+import { FormControl, Grid, InputLabel, makeStyles, MenuItem, Paper, Select, Typography } from "@material-ui/core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { post } from "../utils/getJson";
 import { Block, createBlock, getDifficultyForNextBlock } from "../../../src/block";
@@ -14,6 +14,13 @@ const useStyles = makeStyles(theme => ({
     display: 'flex',
     flexDirection: 'column',
     wordBreak: 'break-all'
+  },
+  text: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+  select: {
+    marginLeft: '1em'
   }
 }));
 
@@ -26,6 +33,7 @@ export default function BlockList() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [block, setBlock] = useState<Block<Transaction[]> | null>(null);
   const [solutions, setSolutions] = useState(0);
+  const [cores, setCores] = useState(1);
   const workers = useRef<Worker[] | null>(null);
 
   const data = useMemo(() => {
@@ -64,7 +72,7 @@ export default function BlockList() {
   useEffect(() => {
     if (data?.unminedBlock && data?.difficulty && !block) {
       const newWorkers = []
-      for (let i = 0; i < navigator.hardwareConcurrency; i++) {
+      for (let i = 0; i < cores; i++) {
         const miner = new Miner();
         miner.postMessage({
           unminedBlock: data.unminedBlock,
@@ -82,7 +90,7 @@ export default function BlockList() {
         workers.current.forEach(worker => worker.terminate());
       }
     }
-  }, [data, onWorkerEvent, block]);
+  }, [data, onWorkerEvent, block, cores]);
 
   /**
    * Send a mined block when ready to the server and reset state
@@ -106,6 +114,10 @@ export default function BlockList() {
     }
   }, [block]);
 
+  const handleCoresChange = useCallback((event: React.ChangeEvent<{ name?: string | undefined; value: unknown }>) => {
+    setCores(event.target.value as number);
+  }, [])
+
   if (!unconfirmedTransactions) {
     return <>Loading...</>
   }
@@ -123,7 +135,20 @@ export default function BlockList() {
             <Typography component="h2" variant="h6" color="primary" gutterBottom>Mine block</Typography>
             <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Block will include {unconfirmedTransactions.length} transactions</Typography>
             {data?.difficulty && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Difficulty: {data.difficulty}</Typography>}
-            <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Using cores: {navigator.hardwareConcurrency}</Typography>
+            <Typography component="h3" variant="h6" color="textSecondary" gutterBottom className={classes.text}>Number of cores used <FormControl variant="outlined">
+              <Select
+                labelId="demo-simple-select-error-label"
+                id="demo-simple-select-error"
+                value={cores}
+                onChange={handleCoresChange}
+                className={classes.select}
+              >
+                {(new Array(navigator.hardwareConcurrency).fill(true).map((_, i) => i+1)).map(item => {
+                  return <MenuItem value={item} key={item}>{item}</MenuItem>
+                })}
+              </Select>
+            </FormControl></Typography>
+
             {hashCount > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Mining in progress, tries: {hashCount}, hash rate: {elapsedTimeInSeconds && Math.floor(hashCount / elapsedTimeInSeconds)} hashes/s</Typography>}
             {solutions > 0 && <Typography component="h3" variant="h6" color="textSecondary" gutterBottom>Solutions: {solutions}</Typography>}
           </Paper>
