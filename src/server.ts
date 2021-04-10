@@ -1,8 +1,8 @@
 import express, { ErrorRequestHandler } from 'express';
-import { authenticate, createWallet, getToken } from './wallet';
+import { authenticate, createWallet, getAllWallets, getToken } from './wallet';
 import bodyParser from 'body-parser';
 import { addBlock, addTransaction, createTransaction, getBlocks, getUnconfirmedTransactions } from './db';
-import { signTransaction } from './transaction';
+import { balanceOfAddress, signTransaction } from './transaction';
 import { receiver } from './slack-server';
 import path from 'path';
 
@@ -41,7 +41,23 @@ receiver.app.get('/unconfirmed-transactions', async (req, res, next) => {
   } catch (err) {
     next(err)
   }
-})
+});
+
+receiver.app.get('/all-wallets', async (req, res, next) => {
+  try {
+    const chain = await getBlocks();
+    const wallets = await getAllWallets();
+    const transactions = await getUnconfirmedTransactions();
+    res.send({
+      data: wallets.map(wallet => ({
+        publicKey: wallet.publicKey,
+        balance: balanceOfAddress(chain, transactions, wallet.publicKey)
+      }))
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 receiver.app.post('/create-wallet', function(req, res, next) {
   const { name, password } = req.body;
@@ -69,6 +85,21 @@ receiver.app.post('/mine-block', async function (req, res, next) {
   try {
     await addBlock(req.body);
     res.send({ data: 'success' });
+  } catch (err) {
+    next(err);
+  }
+})
+
+receiver.app.post('/add-transaction', async function (req, res, next) {
+  console.log('Received new transaction', req.body);
+  try {
+    addTransaction(req.body)
+      .then(() => {
+        res.send({
+          data: 'success'
+        })
+      })
+      .catch(err => next(err));
   } catch (err) {
     next(err);
   }

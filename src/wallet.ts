@@ -55,7 +55,7 @@ function getAllWalletsWithReferences(): Promise<{ [key: string]: Wallet }> {
 /**
  * Fetch all wallets
  */
-function getAllWallets(): Promise<Wallet[]> {
+export function getAllWallets(): Promise<Wallet[]> {
   return getAllWalletsWithReferences().then(results => Object.values(results) || []);
 }
 
