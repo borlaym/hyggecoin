@@ -1,4 +1,4 @@
-import { balanceOfAddress, createCoinbaseTransaction, createOutputs, createTransaction, createUnspentTransactionOutputs, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, validateCoinbaseTransaction, validateOutput, validateTransaction } from "./transaction"
+import { balanceOfAddress, createCoinbaseTransaction, createOutputs, createTransaction, createUnspentTransactionOutputs, dataSerializer, generateTransactionID, REWARD_AMOUNT, signTransactionInputs, Transaction, validateCoinbaseTransaction, validateOutput, validateTransaction } from "./transaction"
 import { generateKeys } from "./wallet"
 import { createBlock, validateChain } from "./block";
 import { GENESIS_BLOCK } from "./db";
@@ -130,10 +130,10 @@ describe('transaction', () => {
   })
   describe('calculating unspent outputs', () => {
     it('only spending from previous blocks', () => {
-      const block1 = createBlock([BLOCK_1_COINBASE_TRANSACTION], GENESIS_BLOCK.hash)
-      const block2 = createBlock([BLOCK_2_COINBASE_TRANSACTION, BLOCK_2_ALICE_SENDS_TO_BRUCE], block1.hash);
-      const block3 = createBlock([BLOCK_3_COINBASE_TRANSACTION, BLOCK_3_ALICE_SENDS_TO_BRUCE], block2.hash);
-      const block4 = createBlock([BLOCK_4_COINBASE_TRANSACTION, BLOCK_4_BRUCE_SENDS_TO_ALICE], block3.hash);
+      const block1 = createBlock([BLOCK_1_COINBASE_TRANSACTION], GENESIS_BLOCK.hash, dataSerializer)
+      const block2 = createBlock([BLOCK_2_COINBASE_TRANSACTION, BLOCK_2_ALICE_SENDS_TO_BRUCE], block1.hash, dataSerializer);
+      const block3 = createBlock([BLOCK_3_COINBASE_TRANSACTION, BLOCK_3_ALICE_SENDS_TO_BRUCE], block2.hash, dataSerializer);
+      const block4 = createBlock([BLOCK_4_COINBASE_TRANSACTION, BLOCK_4_BRUCE_SENDS_TO_ALICE], block3.hash, dataSerializer);
       const blockChain = [
         GENESIS_BLOCK,
         block1,
@@ -141,14 +141,14 @@ describe('transaction', () => {
         block3,
         block4
       ];
-      expect(validateChain(blockChain)).toBe(true);
+      expect(validateChain(blockChain, dataSerializer)).toBe(true);
       expect(balanceOfAddress(blockChain, [], alicePublic)).toBe(197);
       expect(balanceOfAddress(blockChain, [], brucePublic)).toBe(3);
     });
     it('can spend from the yet-to-be-mined transactions', () => {
-      const block1 = createBlock([BLOCK_1_COINBASE_TRANSACTION], GENESIS_BLOCK.hash)
-      const block2 = createBlock([BLOCK_2_COINBASE_TRANSACTION, BLOCK_2_ALICE_SENDS_TO_BRUCE], block1.hash);
-      const block3 = createBlock([BLOCK_3_COINBASE_TRANSACTION, BLOCK_3_ALICE_SENDS_TO_BRUCE], block2.hash);
+      const block1 = createBlock([BLOCK_1_COINBASE_TRANSACTION], GENESIS_BLOCK.hash, dataSerializer)
+      const block2 = createBlock([BLOCK_2_COINBASE_TRANSACTION, BLOCK_2_ALICE_SENDS_TO_BRUCE], block1.hash, dataSerializer);
+      const block3 = createBlock([BLOCK_3_COINBASE_TRANSACTION, BLOCK_3_ALICE_SENDS_TO_BRUCE], block2.hash, dataSerializer);
       const blockChain = [
         GENESIS_BLOCK,
         block1,
@@ -159,7 +159,7 @@ describe('transaction', () => {
         BLOCK_4_BRUCE_SENDS_TO_ALICE,
         BLOCK_4_ALICE_SENDS_SOME_BACK
       ]
-      expect(validateChain(blockChain)).toBe(true);
+      expect(validateChain(blockChain, dataSerializer)).toBe(true);
       expect(balanceOfAddress(blockChain, unconfirmed, alicePublic)).toBe(145);
       // expect(balanceOfAddress(blockChain, unconfirmed, brucePublic)).toBe(5);
     })

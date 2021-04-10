@@ -1,8 +1,8 @@
-import { FormControl, Grid, InputLabel, makeStyles, MenuItem, Paper, Select, Typography } from "@material-ui/core";
+import { FormControl, Grid, makeStyles, MenuItem, Paper, Select, Typography } from "@material-ui/core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { post } from "../utils/getJson";
 import { Block, createBlock, getDifficultyForNextBlock } from "../../../src/block";
-import { createCoinbaseTransaction, Transaction } from "../../../src/transaction";
+import { createCoinbaseTransaction, dataSerializer, Transaction } from "../../../src/transaction";
 import { DataContext } from "./DataProvider";
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import Miner from 'worker-loader!./miner.worker';
@@ -41,7 +41,7 @@ export default function BlockList() {
       return null;
     }
     const coinbaseTransaction = createCoinbaseTransaction(chain.length, publicKey, secretKey);
-    const unminedBlock = createBlock([coinbaseTransaction, ...unconfirmedTransactions], chain[chain.length - 1].hash);
+    const unminedBlock = createBlock([coinbaseTransaction, ...unconfirmedTransactions], chain[chain.length - 1].hash, dataSerializer);
     const difficulty = getDifficultyForNextBlock(chain);
 
     return {

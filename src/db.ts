@@ -2,7 +2,7 @@
 
 import { Block, Chain, checkDifficulty, createBlock, getDifficultyForNextBlock, getHashBase, validateChain } from "./block";
 import firebase from "./firebase";
-import { calculateUnspentOutputs, createOutputs, createUnsignedInputFromUnspentOutput, Transaction, TransactionInput, TransactionOutput, UnspentTransactionOutput, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction";
+import { calculateUnspentOutputs, createOutputs, createUnsignedInputFromUnspentOutput, dataSerializer, findUnspentOutputsForAmount, Transaction, TransactionInput, TransactionOutput, UnspentTransactionOutput, unspentTransactionsOfAddress, validateCoinbaseTransaction, validateTransaction } from "./transaction";
 
 const chainRef = firebase.ref('/chain');
 const transactionsRef = firebase.ref('/transactions');
@@ -64,7 +64,7 @@ export function addBlock(block: Block<Transaction[]>): Promise<boolean> {
     if (!validateCoinbaseTransaction(block.data[0], chain.length)) {
       throw new Error('Invalid coinbase transaction');
     }
-    if (!validateChain([...chain, block])) {
+    if (!validateChain([...chain, block], dataSerializer)) {
       throw new Error('Invalid chain');
     }
     const requiredDifficulty = getDifficultyForNextBlock(chain);
@@ -79,7 +79,7 @@ export function addBlock(block: Block<Transaction[]>): Promise<boolean> {
       transactionsRef.set(remainingUnconfirmedTransactions),
       hashDebugRef.push({
         hash: block.hash,
-        hashBase: getHashBase(block)
+        hashBase: getHashBase(block, dataSerializer)
       })
     ]).then(() => true)
   });
@@ -103,22 +103,6 @@ export async function getBalance(publicKey: string): Promise<number> {
   });
 }
 
-export function findUnspentOutputsForAmount(myUnspentTransactionOutputs: UnspentTransactionOutput[], requestedAmount: number): { includedOutputs: UnspentTransactionOutput[], leftoverAmount: number } {
-  let currentAmount = 0;
-  const includedOutputs = [];
-  for (let i = 0; i < myUnspentTransactionOutputs.length; i++) {
-    currentAmount += myUnspentTransactionOutputs[i].amount;
-    includedOutputs.push(myUnspentTransactionOutputs[i]);
-    if (currentAmount >= requestedAmount) {
-      return {
-        includedOutputs,
-        leftoverAmount: currentAmount - requestedAmount
-      };
-    }
-  }
-  throw new Error('Requested more outputs than available coins');
-}
-
 export async function createTransaction(myPublicKey: string, targetPublicKey: string, message: string, amount: number): Promise<Transaction> {
   return Promise.all([
     getBlocks(),
@@ -134,3 +118,4 @@ export async function createTransaction(myPublicKey: string, targetPublicKey: st
     }
   });
 }
+

@@ -16,6 +16,7 @@ import DashboardIcon from '@material-ui/icons/Dashboard';
 import WalletIcon from '@material-ui/icons/AccountBalanceWallet';
 import MemoryIcon from '@material-ui/icons/Memory';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import SwapHorizIcon from '@material-ui/icons/SwapHoriz';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
@@ -158,6 +159,12 @@ export default function Layout({ children }: { children: React.ReactElement }) {
                 <WalletIcon />
               </ListItemIcon>
               <ListItemText primary="My Wallet" />
+            </ListItem>
+            <ListItem button onClick={() => history.push("/create-transaction")}>
+              <ListItemIcon>
+                <SwapHorizIcon />
+              </ListItemIcon>
+              <ListItemText primary="Create Transaction" />
             </ListItem>
             <ListItem button onClick={() => history.push("/mine")}>
               <ListItemIcon>

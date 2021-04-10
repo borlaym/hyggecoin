@@ -40,31 +40,31 @@ export function getHashBase<T>({
   timestamp,
   data,
   nonce
-}: Block<T>): string {
-  return previousHash + timestamp + JSON.stringify(data) + nonce;
+}: Block<T>, dataSerializer: (data: T) => string): string {
+  return previousHash + timestamp + dataSerializer(data) + nonce;
 }
 
 /**
  * Calculate a block's hash based on all its other information, ensuring that you can't change the contents of the block without the hash changing
  * Uses sha256
  */
-export function calculateBlockHash<T>(block: Block<T>): string {
-  return getHash(getHashBase(block));
+export function calculateBlockHash<T>(block: Block<T>, dataSerializer: (data: T) => string): string {
+  return getHash(getHashBase(block, dataSerializer));
 }
 
 /**
  * Update a block with its calculated hash and return the resulting block.
  * When you create a block, you should leave the hash empty and call this function.
  */
-export function updateHash<T>(block: Block<T>): Block<T> {
-  return { ...block, hash: calculateBlockHash(block) };
+export function updateHash<T>(block: Block<T>, dataSerializer: (data: T) => string): Block<T> {
+  return { ...block, hash: calculateBlockHash(block, dataSerializer) };
 }
 
 /**
  * Update the block with a new once and corresponding hash, and return the resulting block
  */
-export function nextNonce<T>(block: Block<T>): Block<T> {
-  return updateHash({ ...block, nonce: block.nonce + 1 })
+export function nextNonce<T>(block: Block<T>, dataSerializer: (data: T) => string): Block<T> {
+  return updateHash({ ...block, nonce: block.nonce + 1 }, dataSerializer)
 }
 
 /**
@@ -77,10 +77,10 @@ export function checkDifficulty(difficulty: number, hash: string): boolean {
 /**
  * Change the nonce property of a block until the resulting hash passes the given difficulty
  */
-export function mineBlock<T>(difficulty: number, block: Block<T>) {
+export function mineBlock<T>(difficulty: number, block: Block<T>, dataSerializer: (data: T) => string) {
   let finishedBlock = block;
   while (!checkDifficulty(difficulty, finishedBlock.hash)) {
-    finishedBlock = nextNonce(finishedBlock);
+    finishedBlock = nextNonce(finishedBlock, dataSerializer);
     console.log(finishedBlock.nonce, finishedBlock.hash);
   }
   return finishedBlock;
@@ -89,28 +89,31 @@ export function mineBlock<T>(difficulty: number, block: Block<T>) {
 /**
  * Helper for creating a block with a calculated hash
  */
-export function createBlock<T>(data: T, previousHash: string): Block<T> {
+export function createBlock<T>(data: T, previousHash: string, dataSerializer: (data: T) => string): Block<T> {
   return updateHash({
     timestamp: Date.now(),
     data,
     previousHash,
     hash: '',
     nonce: 0
-  });
+  }, dataSerializer);
 }
 
 /**
  * Validates a chain, ensuring that all blocks' hash are correct and they chain together
  */
-export function validateChain<T>(chain: Chain<T>) {
+export function validateChain<T>(chain: Chain<T>, dataSerializer: (data: T) => string) {
   return chain.map((block, i) => {
     // Genesis block is always valid
     if (i === 0) {
       return true;
     }
     // Validate the block
+    if (block.hash !== calculateBlockHash(block, dataSerializer)) {
+      console.log(getHashBase(block, dataSerializer));
+    }
     return (
-      block.hash === calculateBlockHash(block) && // block hash checks out
+      block.hash === calculateBlockHash(block, dataSerializer) && // block hash checks out
       block.previousHash === chain[i -1].hash // previousHash is the save as previous block's hash
     );
   }).filter(isValid => !isValid).length === 0;

@@ -84,6 +84,22 @@ export type Transaction = {
 }
 
 /**
+ * Serialize a transaction, so that the hash function always works with the same input
+ */
+export function transactionSerializer(transaction: Transaction): string {
+  const inputs = transaction.inputs.map(input => input.signature + input.transactionId + input.transactionOutputIndex).join(',');
+  const outputs = transaction.outputs.map(output => output.address + output.amount).join(',');
+  return transaction.id + inputs + outputs + transaction.message;
+}
+
+/**
+ * Data serializer for this cryptocurrency
+ */
+export function dataSerializer(data: Transaction[]): string {
+  return data.map(transactionSerializer).join(';');
+}
+
+/**
  * Generate a has from the transaction's inputs and outputs to use as the id of the transaction
  */
 export function generateTransactionID(transaction: Transaction): string {
@@ -117,6 +133,39 @@ export function signTransaction(transaction: Transaction, secretKey: string): Tr
     ...transaction,
     id: generateTransactionID(transaction)
   }, secretKey);
+}
+
+/**
+ * For a given address, searches the wallet's unspent transaction outputs until it finds enough to fulfill a requestesd amount
+ */
+export function findUnspentOutputsForAmount(myUnspentTransactionOutputs: UnspentTransactionOutput[], requestedAmount: number): { includedOutputs: UnspentTransactionOutput[], leftoverAmount: number } {
+  let currentAmount = 0;
+  const includedOutputs = [];
+  for (let i = 0; i < myUnspentTransactionOutputs.length; i++) {
+    currentAmount += myUnspentTransactionOutputs[i].amount;
+    includedOutputs.push(myUnspentTransactionOutputs[i]);
+    if (currentAmount >= requestedAmount) {
+      return {
+        includedOutputs,
+        leftoverAmount: currentAmount - requestedAmount
+      };
+    }
+  }
+  throw new Error('Requested more outputs than available coins');
+}
+
+/**
+ * Create an unsigned transaction from start to finish from one address to another
+ */
+export function createTransactionForAmount(chain: Chain<Transaction[]>, unconfirmedTransactions: Transaction[], myPublicKey: string, targetPublicKey: string, message: string, amount: number): Transaction {
+  const myUnspentTransactionOutputs = unspentTransactionsOfAddress(chain, unconfirmedTransactions, myPublicKey);
+    const { includedOutputs, leftoverAmount } = findUnspentOutputsForAmount(myUnspentTransactionOutputs, amount);
+    return {
+      id: '',
+      inputs: includedOutputs.map(output => createUnsignedInputFromUnspentOutput(output)),
+      outputs: createOutputs(myPublicKey, targetPublicKey, amount, leftoverAmount),
+      message
+    }
 }
 
 /**
@@ -298,7 +347,7 @@ export function createUnspentTransactionOutputs(transaction: Transaction): Unspe
  * Calculate all unspent transactions at the end of a blockchain, regardless of target address
  */
 export function calculateUnspentOutputs(chain: Chain<Transaction[]>, unconfirmedTransactions: Transaction[]): UnspentTransactionOutput[] {
-  const chainWithUnconfirmed = [...chain, createBlock(unconfirmedTransactions, chain[chain.length - 1].hash)];
+  const chainWithUnconfirmed = [...chain, createBlock(unconfirmedTransactions, chain[chain.length - 1].hash, dataSerializer)];
   // TODO: I think there is a bug now when the input references a transaction in the same block
   return chainWithUnconfirmed.reduce<UnspentTransactionOutput[]>((unspentTransactions, block) => {
     // Gather all new outputs on this block

@@ -1,5 +1,5 @@
 import { Block, getHashBase } from "../../../src/block";
-import { Transaction } from "../../../src/transaction";
+import { dataSerializer, Transaction } from "../../../src/transaction";
 import crypto from 'crypto-js';
 
 export type WorkerEvent = {
@@ -15,15 +15,15 @@ export function getHash(content: string): string {
   return hash.toString(crypto.enc.Hex)
 }
 
-export function calculateBlockHash<T>(block: Block<T>): string {
-  return getHash(getHashBase(block));
+export function calculateBlockHash(block: Block<Transaction[]>): string {
+  return getHash(getHashBase(block, dataSerializer));
 }
 
-export function updateHash<T>(block: Block<T>): Block<T> {
+export function updateHash(block: Block<Transaction[]>): Block<Transaction[]> {
   return { ...block, hash: calculateBlockHash(block) };
 }
 
-export function randomNonce<T>(block: Block<T>): Block<T> {
+export function randomNonce(block: Block<Transaction[]>): Block<Transaction[]> {
   return updateHash({ ...block, nonce: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER) })
 }
 
@@ -31,7 +31,7 @@ export function checkDifficulty(difficulty: number, hash: string): boolean {
   return hash.substr(0, difficulty) === "0".repeat(difficulty)
 }
 
-export function mineBlock<T>(difficulty: number, block: Block<T>) {
+export function mineBlock(difficulty: number, block: Block<Transaction[]>) {
   let counter = 0;
   let finishedBlock = block;
   while (!checkDifficulty(difficulty, finishedBlock.hash)) {

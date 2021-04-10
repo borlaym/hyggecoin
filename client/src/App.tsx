@@ -6,6 +6,7 @@ import BlockList from './components/BlockList';
 import Wallet from './components/Wallet';
 import MyWallet from './components/MyWallet';
 import Mine from './components/Mine';
+import CreateTransaction from './components/CreateTransaction';
 
 export default function App() {
 
@@ -22,6 +23,9 @@ export default function App() {
               </Route>
               <Route path="/wallet/:address">
                 <Wallet />
+              </Route>
+              <Route path="/create-transaction">
+                <CreateTransaction />
               </Route>
               <Route path="/mine">
                 <Mine />
