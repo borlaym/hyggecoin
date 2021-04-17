@@ -1,4 +1,6 @@
-import { DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER, DIFFICULTY_EXPECTED_MINING_TIME, DIFFICULTY_STARTING, getDifficultyForNextBlockFromTimestamps, HOUR, MINUTE } from './block';
+import { DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER, DIFFICULTY_EXPECTED_MINING_TIME, DIFFICULTY_INACTIVITY_PERIOD, DIFFICULTY_MIN, DIFFICULTY_STARTING, getDifficultyForNextBlockFromTimestamps, HOUR, MINUTE } from './block';
+
+
 
 /**
  * [fromIndex (inclusive), toIndex (exclusive), increase]
@@ -24,13 +26,14 @@ function generateTimestampSequence(length: number, generator: GeneratorList) {
 
 describe('blocks and blockchains', () => {
   describe('difficulty', () => {
+
       it('should not change from default if it shouldn\'t', () => {
         const timestamps = generateTimestampSequence(13, [
           [0, 10, DIFFICULTY_EXPECTED_MINING_TIME],
           [10, 20, DIFFICULTY_EXPECTED_MINING_TIME],
           [20, 100, DIFFICULTY_EXPECTED_MINING_TIME]
         ]);
-        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps, 0)).toEqual(DIFFICULTY_STARTING);
       })
       it('should not matter what is in the last blocks that don\'t fill a complete chunk', () => {
         const timestamps = generateTimestampSequence(13, [
@@ -38,7 +41,7 @@ describe('blocks and blockchains', () => {
           [10, 20, DIFFICULTY_EXPECTED_MINING_TIME],
           [20, 100, 2 * DIFFICULTY_EXPECTED_MINING_TIME]
         ]);
-        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps, 0)).toEqual(DIFFICULTY_STARTING);
       })
       it('should increase the difficulty if the average mining time is lower than expected', () => {
         const timestamps = generateTimestampSequence(13, [
@@ -46,7 +49,7 @@ describe('blocks and blockchains', () => {
           [10, 20, DIFFICULTY_EXPECTED_MINING_TIME],
           [20, 100, 2 * DIFFICULTY_EXPECTED_MINING_TIME]
         ]);
-        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING + 1);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps, 0)).toEqual(DIFFICULTY_STARTING + 1);
       })
       it('should decrease the difficulty if the average mining time is higher than expected', () => {
         const timestamps = generateTimestampSequence(13, [
@@ -54,7 +57,7 @@ describe('blocks and blockchains', () => {
           [10, 20, DIFFICULTY_EXPECTED_MINING_TIME],
           [20, 100, 2 * DIFFICULTY_EXPECTED_MINING_TIME]
         ]);
-        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING - 1);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps, 0)).toEqual(DIFFICULTY_STARTING - 1);
       })
       it('should be able to both increase and decrease', () => {
         const timestamps = generateTimestampSequence(33, [
@@ -63,7 +66,16 @@ describe('blocks and blockchains', () => {
           [20, 30, 2 * DIFFICULTY_EXPECTED_MINING_TIME * (1 + DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER) + 1],
           [30, 100, DIFFICULTY_EXPECTED_MINING_TIME]
         ]);
-        expect(getDifficultyForNextBlockFromTimestamps(timestamps)).toEqual(DIFFICULTY_STARTING - 1);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps, 0)).toEqual(DIFFICULTY_STARTING - 1);
+      })
+      it('should return with minimum difficulty if the elapsed time since the ', () => {
+        const timestamps = generateTimestampSequence(33, [
+          [0, 10, DIFFICULTY_EXPECTED_MINING_TIME * (1 + DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER) + 1],
+          [10, 20, DIFFICULTY_EXPECTED_MINING_TIME * (1 - DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER) - 1],
+          [20, 30, 2 * DIFFICULTY_EXPECTED_MINING_TIME * (1 + DIFFICULTY_ALLOWED_DIFFERENCE_MULTIPLIER) + 1],
+          [30, 100, DIFFICULTY_EXPECTED_MINING_TIME]
+        ]);
+        expect(getDifficultyForNextBlockFromTimestamps(timestamps, timestamps[timestamps.length - 1] + DIFFICULTY_INACTIVITY_PERIOD + 1)).toEqual(DIFFICULTY_MIN);
       })
   })
 })

@@ -122,7 +122,7 @@ export function validateChain<T>(chain: Chain<T>, dataSerializer: (data: T) => s
 /**
  * The number of blocks after which we recheck the difficulty
  */
-export const DIFFICULTY_CHECK_INTERVAL = 20;
+export const DIFFICULTY_CHECK_INTERVAL = 10;
 
 export const MINUTE = 1000 * 60;
 export const HOUR = 60 * MINUTE;
@@ -146,9 +146,17 @@ export const DIFFICULTY_MIN = 5;
 export const DIFFICULTY_MAX = 15;
 
 /**
+ * A timeperiod after which the difficulty to mine will be the minimum difficulty
+ */
+export const DIFFICULTY_INACTIVITY_PERIOD = 12 * HOUR;
+
+/**
  * Gets required difficulty at the end of a given timestamp array. For testability purposes
  */
-export function getDifficultyForNextBlockFromTimestamps(timestamps: number[]): number {
+export function getDifficultyForNextBlockFromTimestamps(timestamps: number[], now: number): number {
+  if (now > timestamps[timestamps.length - 1] + DIFFICULTY_INACTIVITY_PERIOD) {
+    return DIFFICULTY_MIN;
+  }
   // Split the array into equal length chunks
   const chunks = chunk(timestamps, DIFFICULTY_CHECK_INTERVAL);
   return chunks.reduce<number>((difficulty, currentChunk) => {
@@ -174,5 +182,5 @@ export function getDifficultyForNextBlockFromTimestamps(timestamps: number[]): n
  * Gets the required difficulty at the end of a given chain
  */
 export function getDifficultyForNextBlock<T>(chain: Block<T>[]): number {
-  return getDifficultyForNextBlockFromTimestamps(chain.map(block => block.timestamp));
+  return getDifficultyForNextBlockFromTimestamps(chain.map(block => block.timestamp), Date.now());
 }
