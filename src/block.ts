@@ -148,7 +148,7 @@ export const DIFFICULTY_MAX = 15;
 /**
  * A timeperiod after which the difficulty to mine will be the minimum difficulty
  */
-export const DIFFICULTY_INACTIVITY_PERIOD = 12 * HOUR;
+export const DIFFICULTY_INACTIVITY_PERIOD = 3 * DIFFICULTY_EXPECTED_MINING_TIME;
 
 /**
  * Gets required difficulty at the end of a given timestamp array. For testability purposes
