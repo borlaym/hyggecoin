@@ -17,8 +17,11 @@ const useStyles = makeStyles({
   }
 });
 
+const difficultyRegex = /^0+/;
+
 export default function BlockComponent({ block, index }: Props) {
   const classes = useStyles();
+  const difficulty = difficultyRegex.exec(block.hash);
   return (
     <Card>
       <CardContent>
@@ -27,6 +30,9 @@ export default function BlockComponent({ block, index }: Props) {
         </Typography>
         <Typography color="textSecondary" className={classes.hash}>
           {block.hash}
+        </Typography>
+        <Typography color="textSecondary" className={classes.hash} gutterBottom>
+          Difficulty: {difficulty ? difficulty[0].length : 0}
         </Typography>
         <Typography color="textSecondary" className={classes.hash} gutterBottom>
           {new Date(block.timestamp).toLocaleString()}
@@ -39,7 +45,7 @@ export default function BlockComponent({ block, index }: Props) {
             aria-controls="panel1a-content"
             id="panel1a-header"
           >
-            <Typography color="textSecondary">Transactions</Typography>
+            <Typography color="textSecondary">{block.data.length} transaction{block.data.length === 1 ? '' : 's'}</Typography>
           </AccordionSummary>
           <AccordionDetails>
               <Grid container spacing={1}>
