@@ -11,8 +11,8 @@ export default function BlockList() {
   return (
     <Grid container spacing={2}>
       {reversedChain.map((block, i) => (
-        <Grid item lg={6}>
-          <BlockComponent block={block} key={block.hash} index={reversedChain.length - i} />
+        <Grid item lg={6} key={block.hash}>
+          <BlockComponent block={block} index={reversedChain.length - i} />
         </Grid>
       ))}
     </Grid>

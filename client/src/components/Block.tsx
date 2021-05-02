@@ -50,8 +50,8 @@ export default function BlockComponent({ block, index }: Props) {
           <AccordionDetails>
               <Grid container spacing={1}>
                 {block.data.map(transaction => (
-                  <Grid item xs={12}>
-                    <TransactionComponent key={transaction.id} transaction={transaction} />
+                  <Grid item xs={12} key={transaction.id}>
+                    <TransactionComponent  transaction={transaction} />
                   </Grid>
                 ))}
               </Grid>
