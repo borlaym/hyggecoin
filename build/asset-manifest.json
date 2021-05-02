@@ -1,20 +1,20 @@
 {
   "files": {
-    "main.js": "/static/js/main.eb84394b.chunk.js",
-    "main.js.map": "/static/js/main.eb84394b.chunk.js.map",
+    "main.js": "/static/js/main.fa167853.chunk.js",
+    "main.js.map": "/static/js/main.fa167853.chunk.js.map",
     "runtime-main.js": "/static/js/runtime-main.900dd88b.js",
     "runtime-main.js.map": "/static/js/runtime-main.900dd88b.js.map",
-    "static/js/2.67e5d137.chunk.js": "/static/js/2.67e5d137.chunk.js",
-    "static/js/2.67e5d137.chunk.js.map": "/static/js/2.67e5d137.chunk.js.map",
+    "static/js/2.b4dce4f6.chunk.js": "/static/js/2.b4dce4f6.chunk.js",
+    "static/js/2.b4dce4f6.chunk.js.map": "/static/js/2.b4dce4f6.chunk.js.map",
     "index.html": "/index.html",
-    "static/js/2.67e5d137.chunk.js.LICENSE.txt": "/static/js/2.67e5d137.chunk.js.LICENSE.txt",
-    "static/js/miner.worker.54009609.worker.js": "/static/js/miner.worker.54009609.worker.js",
-    "static/js/miner.worker.54009609.worker.js.LICENSE.txt": "/static/js/miner.worker.54009609.worker.js.LICENSE.txt",
-    "static/js/miner.worker.54009609.worker.js.map": "/static/js/miner.worker.54009609.worker.js.map"
+    "static/js/2.b4dce4f6.chunk.js.LICENSE.txt": "/static/js/2.b4dce4f6.chunk.js.LICENSE.txt",
+    "static/js/miner.worker.f387f6d7.worker.js": "/static/js/miner.worker.f387f6d7.worker.js",
+    "static/js/miner.worker.f387f6d7.worker.js.LICENSE.txt": "/static/js/miner.worker.f387f6d7.worker.js.LICENSE.txt",
+    "static/js/miner.worker.f387f6d7.worker.js.map": "/static/js/miner.worker.f387f6d7.worker.js.map"
   },
   "entrypoints": [
     "static/js/runtime-main.900dd88b.js",
-    "static/js/2.67e5d137.chunk.js",
-    "static/js/main.eb84394b.chunk.js"
+    "static/js/2.b4dce4f6.chunk.js",
+    "static/js/main.fa167853.chunk.js"
   ]
 }
