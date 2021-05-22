@@ -12,7 +12,8 @@
     "watch-ts": "tsc -w",
     "test": "jest --watch",
     "client": "cd ./client && react-scripts start",
-    "mine": "tsc && node dist/scripts/mine.js"
+    "mine": "tsc && node dist/scripts/mine.js",
+    "findThings": "tsc && node dist/scripts/findThing.js"
   },
   "devDependencies": {
     "jest": "^26.6.3",

@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 
 export default function api(path: string, method: 'GET' | 'POST' = 'GET', body?: any) {
-  return fetch(`http://localhost:9000${path}`, {
+  return fetch(`http://hyggecoin.herokuapp.com${path}`, {
     method,
     body: body ? JSON.stringify(body) : undefined,
     headers: {
